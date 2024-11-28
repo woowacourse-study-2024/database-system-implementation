@@ -1,6 +1,10 @@
 package database.storageEngine.page;
 
 import database.storageEngine.bufferpool.TablePageKey;
+import database.storageEngine.exception.DirectoryCreationException;
+import database.storageEngine.exception.PageLoadException;
+import database.storageEngine.exception.PageSaveException;
+import database.storageEngine.exception.TableCreationException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -32,7 +36,7 @@ public class FileManager {
             try {
                 Files.createDirectories(path);
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new DirectoryCreationException("Failed to create directory: " + DIRECTORY_PATH, e);
             }
         }
     }
@@ -40,7 +44,6 @@ public class FileManager {
     public void savePage(String tableName, Page page) {
         createTableIfNotExists(tableName);
         String fileName = DIRECTORY_PATH + File.separator + tableName + fileExtension.getExtension();
-        ;
 
         try (RandomAccessFile file = new RandomAccessFile(fileName, "rw")) {
             file.seek(page.getPageNumber() * PAGE_SIZE);
@@ -50,7 +53,7 @@ public class FileManager {
             }
             pageSize++;
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new PageSaveException("Failed to save page for table: " + tableName, e);
         }
     }
 
@@ -61,7 +64,7 @@ public class FileManager {
             try {
                 file.createNewFile();
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new TableCreationException("Failed to create table file: " + tableName, e);
             }
         }
     }
@@ -79,7 +82,7 @@ public class FileManager {
                 return Optional.of(page);
             }
         } catch (IOException | ClassNotFoundException e) {
-            return Optional.empty();
+            throw new PageLoadException("Failed to load page for key: " + key, e);
         }
     }
 
