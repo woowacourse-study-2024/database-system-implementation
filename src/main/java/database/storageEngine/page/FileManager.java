@@ -15,7 +15,6 @@ import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Optional;
 
 public class FileManager {
 
@@ -69,17 +68,15 @@ public class FileManager {
         }
     }
 
-    public Optional<Page> loadPage(TablePageKey key) {
+    public Page loadPage(TablePageKey key) {
         createTableIfNotExists(key.tableName());
         String fileName = DIRECTORY_PATH + File.separator + key.tableName() + fileExtension.getExtension();
-        ;
 
         try (RandomAccessFile file = new RandomAccessFile(fileName, "r")) {
             file.seek(key.pageNumber() * PAGE_SIZE);
 
             try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(file.getFD()))) {
-                Page page = (Page) in.readObject();
-                return Optional.of(page);
+                return (Page) in.readObject();
             }
         } catch (IOException | ClassNotFoundException e) {
             throw new PageLoadException("Failed to load page for key: " + key, e);

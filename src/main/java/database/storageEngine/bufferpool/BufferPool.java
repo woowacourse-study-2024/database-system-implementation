@@ -1,8 +1,8 @@
 package database.storageEngine.bufferpool;
 
 import database.storageEngine.page.FileExtension;
-import database.storageEngine.page.Page;
 import database.storageEngine.page.FileManager;
+import database.storageEngine.page.Page;
 import database.storageEngine.page.StorageRecord;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,19 +24,16 @@ public class BufferPool {
     }
 
     public Optional<Page> getPage(TablePageKey key) {
+        // Cache hit
         if (pages.containsKey(key)) {
             strategy.get(key);
             return Optional.of(pages.get(key));
         }
 
-        Optional<Page> optionalPage = fileManager.loadPage(key);
-        if (optionalPage.isPresent()) {
-            Page page = optionalPage.get();
-            putPage(key, page);
-            return Optional.of(page);
-        }
-
-        return Optional.empty();
+        // Cache miss
+        Page page = fileManager.loadPage(key);
+        putPage(key, page);
+        return Optional.of(page);
     }
 
     public void putPage(TablePageKey key, Page page) {

@@ -16,6 +16,10 @@ public class PageDirectory implements Serializable {
         recordPositions.add(position);
     }
 
+    public int getSize() {
+        return recordPositions.size() * Integer.BYTES;
+    }
+
     @Override
     public String toString() {
         return "PageDirectory{" +

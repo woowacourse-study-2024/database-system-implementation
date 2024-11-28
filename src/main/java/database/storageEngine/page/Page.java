@@ -19,15 +19,23 @@ public class Page implements Serializable {
         this.pageHeader = new PageHeader(pageType);
         this.userStorageRecords = new ArrayList<>();
         this.pageDirectory = new PageDirectory();
-        this.freeSpace = PAGE_SIZE - (this.fileHeader.getHeaderSize() + this.pageHeader.getHeaderSize());
+
+        int initialDirectorySize = pageDirectory.getSize();
+        this.freeSpace = getFreeSpace(initialDirectorySize);
+    }
+
+    private int getFreeSpace(int initialDirectorySize) {
+        return PAGE_SIZE - (this.fileHeader.getHeaderSize() + this.pageHeader.getHeaderSize() + initialDirectorySize);
     }
 
     public boolean addRecord(StorageRecord storageRecord) {
         int recordSize = storageRecord.getSize();
-        if (freeSpace >= recordSize) {
+        int directorySizeIncrease = Integer.BYTES;
+
+        if (freeSpace >= recordSize + directorySizeIncrease) {
             userStorageRecords.add(storageRecord);
             pageDirectory.addRecordPosition(userStorageRecords.size() - 1);
-            freeSpace -= recordSize;
+            freeSpace -= (recordSize + directorySizeIncrease);
             pageHeader.incrementRecordCount();
             markDirty();
             return true;
@@ -36,7 +44,7 @@ public class Page implements Serializable {
         }
     }
 
-    private void markDirty() {
+    public void markDirty() {
         pageHeader.markDirty();
     }
 

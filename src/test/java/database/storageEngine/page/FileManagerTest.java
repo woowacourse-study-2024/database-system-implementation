@@ -54,8 +54,8 @@ class FileManagerTest {
         fileManager.savePage(tableName, page2);
 
         // when
-        Page foundPage1 = fileManager.loadPage(new TablePageKey(tableName, pageNumber1)).get();
-        Page foundPage2 = fileManager.loadPage(new TablePageKey(tableName, pageNumber2)).get();
+        Page foundPage1 = fileManager.loadPage(new TablePageKey(tableName, pageNumber1));
+        Page foundPage2 = fileManager.loadPage(new TablePageKey(tableName, pageNumber2));
 
         // then
         assertThat(foundPage1.getPageNumber()).isEqualTo(pageNumber1);
