@@ -5,7 +5,7 @@ import java.io.Serializable;
 public class PageHeader implements Serializable {
 
     private static final int HEADER_SIZE = 56;
-    
+
     private final PageType pageType;
     private int recordCount;
     private boolean isDirty;

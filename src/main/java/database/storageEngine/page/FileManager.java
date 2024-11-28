@@ -17,13 +17,13 @@ public class FileManager {
 
     private static final int PAGE_SIZE = 16 * 1024;
     private static final String DIRECTORY_PATH = "disk";
-    private static final String FILE_EXTENSION = ".ibd";
-
+    private final FileExtension fileExtension;
     private int pageSize;
 
-    public FileManager() {
+    public FileManager(FileExtension fileExtension) {
         createDirectoryIfNotExists();
         this.pageSize = 0;
+        this.fileExtension = fileExtension;
     }
 
     private void createDirectoryIfNotExists() {
@@ -37,21 +37,10 @@ public class FileManager {
         }
     }
 
-    private void createTableIfNotExists(String tableName) {
-        String fileName = DIRECTORY_PATH + File.separator + tableName + FILE_EXTENSION;
-        File file = new File(fileName);
-        if (!file.exists()) {
-            try {
-                file.createNewFile();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
     public void savePage(String tableName, Page page) {
         createTableIfNotExists(tableName);
-        String fileName = DIRECTORY_PATH + File.separator + tableName + FILE_EXTENSION;
+        String fileName = DIRECTORY_PATH + File.separator + tableName + fileExtension.getExtension();
+        ;
 
         try (RandomAccessFile file = new RandomAccessFile(fileName, "rw")) {
             file.seek(page.getPageNumber() * PAGE_SIZE);
@@ -65,9 +54,22 @@ public class FileManager {
         }
     }
 
+    private void createTableIfNotExists(String tableName) {
+        String fileName = DIRECTORY_PATH + File.separator + tableName + fileExtension.getExtension();
+        File file = new File(fileName);
+        if (!file.exists()) {
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     public Optional<Page> loadPage(TablePageKey key) {
         createTableIfNotExists(key.tableName());
-        String fileName = DIRECTORY_PATH + File.separator + key.tableName() + FILE_EXTENSION;
+        String fileName = DIRECTORY_PATH + File.separator + key.tableName() + fileExtension.getExtension();
+        ;
 
         try (RandomAccessFile file = new RandomAccessFile(fileName, "r")) {
             file.seek(key.pageNumber() * PAGE_SIZE);

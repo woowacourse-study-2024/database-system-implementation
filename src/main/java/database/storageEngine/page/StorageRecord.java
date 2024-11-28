@@ -13,7 +13,7 @@ public class StorageRecord implements Serializable {
         this.values = values;
     }
 
-    public boolean contains(Object key){
+    public boolean contains(Object key) {
         return values.contains(key);
     }
 

@@ -16,14 +16,14 @@ import org.junit.jupiter.api.Test;
 class FileManagerTest {
 
     private static final String DIRECTORY_PATH = "disk";
-    private static final String FILE_EXTENSION = ".ibd";
+    private static final FileExtension fileExtension = FileExtension.IDB;
 
     private FileManager fileManager;
     private final String tableName = "table";
 
     @BeforeEach
     void setUp() {
-        fileManager = new FileManager();
+        fileManager = new FileManager(fileExtension);
     }
 
     @DisplayName("페이지 저장에 성공한다.")
@@ -36,7 +36,7 @@ class FileManagerTest {
         fileManager.savePage(tableName, page);
 
         // then
-        Path filePath = Paths.get(DIRECTORY_PATH, tableName + FILE_EXTENSION);
+        Path filePath = Paths.get(DIRECTORY_PATH, tableName + fileExtension.getExtension());
         assertThat(Files.exists(filePath)).isTrue();
     }
 
@@ -64,7 +64,7 @@ class FileManagerTest {
 
     @AfterEach
     void tearDown() {
-        Path filePath = Paths.get(DIRECTORY_PATH, tableName + FILE_EXTENSION);
+        Path filePath = Paths.get(DIRECTORY_PATH, tableName + fileExtension.getExtension());
         try {
             Files.deleteIfExists(filePath);
         } catch (IOException e) {

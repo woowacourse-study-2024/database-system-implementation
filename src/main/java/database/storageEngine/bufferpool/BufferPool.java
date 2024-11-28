@@ -1,5 +1,6 @@
 package database.storageEngine.bufferpool;
 
+import database.storageEngine.page.FileExtension;
 import database.storageEngine.page.Page;
 import database.storageEngine.page.FileManager;
 import database.storageEngine.page.StorageRecord;
@@ -19,7 +20,7 @@ public class BufferPool {
         this.capacity = capacity;
         this.strategy = strategy;
         this.pages = new HashMap<>();
-        this.fileManager = new FileManager();
+        this.fileManager = new FileManager(FileExtension.IDB);
     }
 
     public Optional<Page> getPage(TablePageKey key) {
