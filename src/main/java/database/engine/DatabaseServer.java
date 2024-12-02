@@ -1,11 +1,12 @@
-package database;
+package database.engine;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
 public class DatabaseServer {
-    private int port;
+
+    private final int port;
     private boolean isRunning;
 
     public DatabaseServer(int port) {
