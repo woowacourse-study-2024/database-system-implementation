@@ -1,19 +1,34 @@
 package database.page;
 
 public class Page {
-    private final long pageNum;
-    private final byte[] data;
 
-    public Page(long pageNum, byte[] data) {
-        this.pageNum = pageNum;
-        this.data = data;
+    public static final int PAGE_SIZE = 16 * 1024;
+
+    private final FileHeader fileHeader;
+    private final PageHeader pageHeader;
+    private final UserRecords userRecords;
+    private int freeSpace;
+
+    public Page(FileHeader fileHeader, PageHeader pageHeader, UserRecords userRecords, int freeSpace) {
+        this.fileHeader = fileHeader;
+        this.pageHeader = pageHeader;
+        this.userRecords = userRecords;
+        this.freeSpace = freeSpace;
     }
 
-    public long getPageNum() {
-        return pageNum;
+    public FileHeader getFileHeader() {
+        return fileHeader;
     }
 
-    public byte[] getData() {
-        return data;
+    public PageHeader getPageHeader() {
+        return pageHeader;
+    }
+
+    public UserRecords getUserRecords() {
+        return userRecords;
+    }
+
+    public int getFreeSpace() {
+        return freeSpace;
     }
 }
