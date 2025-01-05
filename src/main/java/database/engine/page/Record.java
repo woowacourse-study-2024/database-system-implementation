@@ -1,17 +1,28 @@
 package database.engine.page;
 
+import java.nio.ByteBuffer;
+
 public class Record {
 
-    private final int recordId;
+    private final short nextRecordOffset;
     private final byte[] data;
 
-    public Record(int recordId, byte[] data) {
-        this.recordId = recordId;
+    private Record(short nextRecordOffset, byte[] data) {
+        this.nextRecordOffset = nextRecordOffset;
         this.data = data;
     }
 
-    public int getRecordId() {
-        return recordId;
+    public static Record deserialize(ByteBuffer buffer, int currentPosition) {
+        short nextRecordOffset = buffer.getShort();
+        int dataLength = nextRecordOffset - currentPosition - 2;
+        byte[] data = new byte[dataLength];
+        buffer.get(data);
+
+        return new Record(nextRecordOffset, data);
+    }
+
+    public short getNextRecordOffset() {
+        return nextRecordOffset;
     }
 
     public byte[] getData() {

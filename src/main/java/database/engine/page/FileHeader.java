@@ -1,27 +1,32 @@
 package database.engine.page;
 
+import java.nio.ByteBuffer;
+
 public class FileHeader {
 
     private final int pageNumber;
-    private final int spaceId;
     private final PageType pageType;
     private int prevPageNumber;
     private int nextPageNumber;
 
-    public FileHeader(int pageNumber, int spaceId, PageType pageType, int prevPageNumber, int nextPageNumber) {
+    private FileHeader(int pageNumber, PageType pageType, int prevPageNumber, int nextPageNumber) {
         this.pageNumber = pageNumber;
-        this.spaceId = spaceId;
         this.pageType = pageType;
         this.prevPageNumber = prevPageNumber;
         this.nextPageNumber = nextPageNumber;
     }
 
-    public int getPageNumber() {
-        return pageNumber;
+    public static FileHeader deserialize(ByteBuffer buffer) {
+        int pageNumber = buffer.getInt();
+        PageType pageType = PageType.fromCode(buffer.get());
+        int prevPageNumber = buffer.getInt();
+        int nextPageNumber = buffer.getInt();
+
+        return new FileHeader(pageNumber, pageType, prevPageNumber, nextPageNumber);
     }
 
-    public int getSpaceId() {
-        return spaceId;
+    public int getPageNumber() {
+        return pageNumber;
     }
 
     public PageType getPageType() {
