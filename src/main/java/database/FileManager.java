@@ -1,5 +1,6 @@
 package database;
 
+import database.engine.page.FileExtension;
 import database.engine.page.Page;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -11,10 +12,12 @@ import java.nio.file.Paths;
 
 public class FileManager {
 
-    private static final String DIRECTORY_PATH = "data/files/";
-    private static final String FILE_EXTENSION = ".ibd";
+    public static final String DIRECTORY_PATH = "files/data/";
 
-    public FileManager() {
+    private final FileExtension fileExtension;
+
+    public FileManager(FileExtension fileExtension) {
+        this.fileExtension = fileExtension;
         createDirectory();
     }
 
@@ -30,7 +33,7 @@ public class FileManager {
     }
 
     public Page loadPage(String tableName, int pageNumber) {
-        Path filePath = Paths.get(DIRECTORY_PATH, tableName + FILE_EXTENSION);
+        Path filePath = Paths.get(DIRECTORY_PATH, tableName + fileExtension.getExtension());
 
         try (RandomAccessFile raf = new RandomAccessFile(filePath.toFile(), "r");
              FileChannel channel = raf.getChannel()) {
@@ -47,8 +50,9 @@ public class FileManager {
         }
     }
 
-    public void writePage(Page page, String tableName, int pageNumber) {
-        Path filePath = Paths.get(DIRECTORY_PATH, tableName + FILE_EXTENSION);
+    public void writePage(Page page, String tableName) {
+        Path filePath = Paths.get(DIRECTORY_PATH, tableName + fileExtension.getExtension());
+        int pageNumber = page.getPageNumber();
 
         try (RandomAccessFile raf = new RandomAccessFile(filePath.toFile(), "rw");
              FileChannel channel = raf.getChannel()) {
