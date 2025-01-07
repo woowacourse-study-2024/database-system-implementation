@@ -4,6 +4,8 @@ import java.nio.ByteBuffer;
 
 public class PageHeader {
 
+    public static final int HEADER_SIZE = 7;
+
     private static final int TRUE = 1;
     private static final int FALSE = 0;
 
@@ -17,6 +19,10 @@ public class PageHeader {
         this.lastInsertPosition = lastInsertPosition;
         this.recordCount = recordCount;
         this.isDirty = isDirty;
+    }
+
+    public static PageHeader create(short pageLevel, short lastInsertPosition, short recordCount, boolean isDirty) {
+        return new PageHeader(pageLevel, lastInsertPosition, recordCount, isDirty);
     }
 
     public static PageHeader deserialize(ByteBuffer buffer) {

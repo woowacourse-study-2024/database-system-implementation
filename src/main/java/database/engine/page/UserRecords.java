@@ -13,6 +13,10 @@ public class UserRecords {
         this.records = records;
     }
 
+    public static UserRecords empty() {
+        return new UserRecords(new LinkedList<>());
+    }
+
     public static UserRecords deserialize(ByteBuffer buffer, short recordCount) {
         List<Record> records = new LinkedList<>(deserializeRecords(buffer, recordCount));
         return new UserRecords(records);

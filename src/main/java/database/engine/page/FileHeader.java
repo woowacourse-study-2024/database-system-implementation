@@ -4,6 +4,8 @@ import java.nio.ByteBuffer;
 
 public class FileHeader {
 
+    public static final int HEADER_SIZE = 10;
+
     private final int pageNumber;
     private final PageType pageType;
     private int prevPageNumber;
@@ -14,6 +16,10 @@ public class FileHeader {
         this.pageType = pageType;
         this.prevPageNumber = prevPageNumber;
         this.nextPageNumber = nextPageNumber;
+    }
+
+    public static FileHeader create(int pageNumber, PageType pageType, int prevPageNumber, int nextPageNumber) {
+        return new FileHeader(pageNumber, pageType, prevPageNumber, nextPageNumber);
     }
 
     public static FileHeader deserialize(ByteBuffer buffer) {
