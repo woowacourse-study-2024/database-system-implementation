@@ -49,4 +49,8 @@ public class Page {
     public int getFreeSpace() {
         return freeSpace;
     }
+
+    public int getPageNumber() {
+        return fileHeader.getPageNumber();
+    }
 }

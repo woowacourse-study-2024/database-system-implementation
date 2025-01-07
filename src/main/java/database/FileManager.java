@@ -46,4 +46,22 @@ public class FileManager {
             throw new RuntimeException("Failed to load page " + pageNumber + " for table " + tableName + ".", e);
         }
     }
+
+    public void writePage(Page page, String tableName, int pageNumber) {
+        Path filePath = Paths.get(DIRECTORY_PATH, tableName + FILE_EXTENSION);
+
+        try (RandomAccessFile raf = new RandomAccessFile(filePath.toFile(), "rw");
+             FileChannel channel = raf.getChannel()) {
+
+            long offset = (long) pageNumber * Page.PAGE_SIZE;
+            ByteBuffer buffer = ByteBuffer.allocateDirect(Page.PAGE_SIZE);
+            page.serialize(buffer);
+
+            buffer.rewind();
+
+            channel.write(buffer, offset);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write page " + pageNumber + " for table " + tableName + ".", e);
+        }
+    }
 }
