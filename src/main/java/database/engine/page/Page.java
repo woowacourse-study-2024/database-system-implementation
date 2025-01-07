@@ -27,6 +27,13 @@ public class Page {
         return new Page(fileHeader, pageHeader, userRecords, freeSpace);
     }
 
+    public void serialize(ByteBuffer buffer) {
+        fileHeader.serialize(buffer);
+        pageHeader.serialize(buffer);
+        userRecords.serialize(buffer);
+        buffer.putShort(freeSpace);
+    }
+
     public FileHeader getFileHeader() {
         return fileHeader;
     }

@@ -21,6 +21,11 @@ public class Record {
         return new Record(nextRecordOffset, data);
     }
 
+    public void serialize(ByteBuffer buffer) {
+        buffer.putShort(nextRecordOffset);
+        buffer.put(data);
+    }
+
     public short getNextRecordOffset() {
         return nextRecordOffset;
     }

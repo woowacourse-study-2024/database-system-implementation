@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 public class PageHeader {
 
+    private static final int TRUE = 1;
     private static final int FALSE = 0;
 
     private short pageLevel;
@@ -25,6 +26,13 @@ public class PageHeader {
         boolean isDirty = buffer.get() != FALSE;
 
         return new PageHeader(pageLevel, lastInsertPosition, recordCount, isDirty);
+    }
+
+    public void serialize(ByteBuffer buffer) {
+        buffer.putShort(pageLevel);
+        buffer.putShort(lastInsertPosition);
+        buffer.putShort(recordCount);
+        buffer.put((byte) (isDirty ? TRUE : FALSE));
     }
 
     public short getPageLevel() {

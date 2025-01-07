@@ -18,6 +18,10 @@ public class UserRecords {
         return new UserRecords(records);
     }
 
+    public void serialize(ByteBuffer buffer) {
+        records.forEach(record -> record.serialize(buffer));
+    }
+
     private static List<Record> deserializeRecords(ByteBuffer buffer, short recordCount) {
         List<Record> records = new LinkedList<>();
 

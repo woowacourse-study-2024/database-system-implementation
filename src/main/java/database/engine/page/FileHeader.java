@@ -25,6 +25,13 @@ public class FileHeader {
         return new FileHeader(pageNumber, pageType, prevPageNumber, nextPageNumber);
     }
 
+    public void serialize(ByteBuffer buffer) {
+        buffer.putInt(pageNumber);
+        buffer.put((byte) pageType.getCode());
+        buffer.putInt(prevPageNumber);
+        buffer.putInt(nextPageNumber);
+    }
+
     public int getPageNumber() {
         return pageNumber;
     }
