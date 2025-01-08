@@ -32,8 +32,8 @@ public class FileManager {
         }
     }
 
-    public Page loadPage(String tableName, int pageNumber) {
-        Path filePath = Paths.get(DIRECTORY_PATH, tableName + fileExtension.getExtension());
+    public Page loadPage(String fileName, int pageNumber) {
+        Path filePath = Paths.get(DIRECTORY_PATH, fileName + fileExtension.getExtension());
 
         try (RandomAccessFile raf = new RandomAccessFile(filePath.toFile(), "r");
              FileChannel channel = raf.getChannel()) {
@@ -46,12 +46,12 @@ public class FileManager {
 
             return Page.deserialize(buffer);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to load page " + pageNumber + " for table " + tableName + ".", e);
+            throw new RuntimeException("Failed to load page " + pageNumber + " for table " + fileName + ".", e);
         }
     }
 
-    public void writePage(Page page, String tableName) {
-        Path filePath = Paths.get(DIRECTORY_PATH, tableName + fileExtension.getExtension());
+    public void writePage(Page page, String fileName) {
+        Path filePath = Paths.get(DIRECTORY_PATH, fileName + fileExtension.getExtension());
         int pageNumber = page.getPageNumber();
 
         try (RandomAccessFile raf = new RandomAccessFile(filePath.toFile(), "rw");
@@ -65,7 +65,7 @@ public class FileManager {
 
             channel.write(buffer, offset);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to write page " + pageNumber + " for table " + tableName + ".", e);
+            throw new RuntimeException("Failed to write page " + pageNumber + " for table " + fileName + ".", e);
         }
     }
 }
