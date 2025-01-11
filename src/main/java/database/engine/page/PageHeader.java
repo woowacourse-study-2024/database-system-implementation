@@ -41,6 +41,14 @@ public class PageHeader {
         buffer.put((byte) (isDirty ? TRUE : FALSE));
     }
 
+    public void makeClean() {
+        isDirty = false;
+    }
+
+    public void makeDirty() {
+        isDirty = true;
+    }
+
     public short getPageLevel() {
         return pageLevel;
     }

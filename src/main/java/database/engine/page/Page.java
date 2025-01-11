@@ -43,6 +43,18 @@ public class Page {
         buffer.putShort(freeSpace);
     }
 
+    public void makeClean() {
+        pageHeader.makeClean();
+    }
+
+    public void makeDirty() {
+        pageHeader.makeDirty();
+    }
+
+    public boolean isDirty() {
+        return pageHeader.isDirty();
+    }
+
     public FileHeader getFileHeader() {
         return fileHeader;
     }

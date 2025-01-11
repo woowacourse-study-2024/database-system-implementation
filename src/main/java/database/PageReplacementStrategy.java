@@ -1,5 +1,7 @@
 package database;
 
+import java.util.Collection;
+
 public interface PageReplacementStrategy<K> {
 
     void access(K key);
@@ -8,5 +10,9 @@ public interface PageReplacementStrategy<K> {
 
     K evict();
 
+    boolean remove(K key);
+
     boolean contains(K key);
+
+    Collection<K> keySet();
 }

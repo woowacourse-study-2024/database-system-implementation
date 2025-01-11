@@ -1,5 +1,6 @@
 package database;
 
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -38,7 +39,17 @@ public class LRUStrategy<K> implements PageReplacementStrategy<K> {
     }
 
     @Override
+    public boolean remove(K key) {
+        return cache.remove(key);
+    }
+
+    @Override
     public boolean contains(K key) {
         return cache.contains(key);
+    }
+
+    @Override
+    public Collection<K> keySet() {
+        return cache;
     }
 }
