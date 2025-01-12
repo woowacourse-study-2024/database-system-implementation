@@ -23,12 +23,15 @@ public class FileManager {
 
     private void createDirectory() {
         Path directory = Paths.get(DIRECTORY_PATH);
-        if (Files.notExists(directory)) {
-            try {
-                Files.createDirectories(directory);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+
+        if (Files.exists(directory)) {
+            return;
+        }
+
+        try {
+            Files.createDirectories(directory);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 

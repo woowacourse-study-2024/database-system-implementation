@@ -37,11 +37,7 @@ public class BufferPool {
         }
 
         if (pages.size() >= capacity) {
-            PageId evicted = strategy.evict();
-            if (evicted != null && pages.containsKey(evicted)) {
-                flushPage(pageId);
-                pages.remove(pageId);
-            }
+            evictPage(pageId);
         }
 
         pages.put(pageId, page);
@@ -49,14 +45,17 @@ public class BufferPool {
     }
 
     public void flushPage(PageId pageId) {
-        if (pages.containsKey(pageId)) {
-            Page page = pages.get(pageId);
-
-            if (page.isDirty()) {
-                fileManager.writePage(page, pageId.fileName());
-                page.makeClean();
-            }
+        if (!pages.containsKey(pageId)) {
+            return;
         }
+
+        Page page = pages.get(pageId);
+        if (!page.isDirty()) {
+            return;
+        }
+
+        fileManager.writePage(page, pageId.fileName());
+        page.makeClean();
     }
 
     public void flushAllPages() {
@@ -66,19 +65,28 @@ public class BufferPool {
     }
 
     public void removePage(PageId pageId) {
-        if (pages.containsKey(pageId)) {
-            Page page = pages.get(pageId);
-
-            if (page.isDirty()) {
-                flushPage(pageId);
-            }
-
-            strategy.remove(pageId);
-            pages.remove(pageId);
+        if (!pages.containsKey(pageId)) {
+            return;
         }
+
+        Page page = pages.get(pageId);
+        if (page.isDirty()) {
+            flushPage(pageId);
+        }
+
+        strategy.remove(pageId);
+        pages.remove(pageId);
     }
 
     public boolean containsPage(PageId pageId) {
         return pages.containsKey(pageId);
+    }
+
+    private void evictPage(PageId pageId) {
+        PageId evicted = strategy.evict();
+        if (evicted != null && pages.containsKey(evicted)) {
+            flushPage(pageId);
+            pages.remove(pageId);
+        }
     }
 }
