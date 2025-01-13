@@ -23,7 +23,8 @@ class FileManagerTest {
 
     @BeforeEach
     void setUp() {
-        fileManager = new FileManager(fileExtension);
+        ByteBufferPool pool = new ByteBufferPool(Page.PAGE_SIZE * 3, Page.PAGE_SIZE);
+        fileManager = new FileManager(pool, fileExtension);
     }
 
     @AfterEach

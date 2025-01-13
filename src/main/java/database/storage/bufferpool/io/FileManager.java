@@ -14,9 +14,11 @@ public class FileManager {
 
     public static final String DIRECTORY_PATH = "files/data/";
 
+    private final ByteBufferPool byteBufferPool;
     private final FileExtension fileExtension;
 
-    public FileManager(FileExtension fileExtension) {
+    public FileManager(ByteBufferPool byteBufferPool, FileExtension fileExtension) {
+        this.byteBufferPool = byteBufferPool;
         this.fileExtension = fileExtension;
         createDirectory();
     }
@@ -37,12 +39,13 @@ public class FileManager {
 
     public Page loadPage(String fileName, int pageNumber) {
         Path filePath = Paths.get(DIRECTORY_PATH, fileName + fileExtension.getExtension());
+        ByteBuffer buffer = null;
 
         try (RandomAccessFile raf = new RandomAccessFile(filePath.toFile(), "r");
              FileChannel channel = raf.getChannel()) {
 
             long offset = (long) pageNumber * Page.PAGE_SIZE;
-            ByteBuffer buffer = ByteBuffer.allocateDirect(Page.PAGE_SIZE);
+            buffer = byteBufferPool.allocate(1000);
             channel.read(buffer, offset);
 
             buffer.flip();
@@ -50,18 +53,21 @@ public class FileManager {
             return Page.deserialize(buffer);
         } catch (IOException e) {
             throw new RuntimeException("Failed to load page " + pageNumber + " for table " + fileName + ".", e);
+        } finally {
+            byteBufferPool.deallocate(buffer);
         }
     }
 
     public void writePage(Page page, String fileName) {
         Path filePath = Paths.get(DIRECTORY_PATH, fileName + fileExtension.getExtension());
         int pageNumber = page.getPageNumber();
+        ByteBuffer buffer = null;
 
         try (RandomAccessFile raf = new RandomAccessFile(filePath.toFile(), "rw");
              FileChannel channel = raf.getChannel()) {
 
             long offset = (long) pageNumber * Page.PAGE_SIZE;
-            ByteBuffer buffer = ByteBuffer.allocateDirect(Page.PAGE_SIZE);
+            buffer = byteBufferPool.allocate(1000);
             page.serialize(buffer);
 
             buffer.rewind();
@@ -69,6 +75,8 @@ public class FileManager {
             channel.write(buffer, offset);
         } catch (IOException e) {
             throw new RuntimeException("Failed to write page " + pageNumber + " for table " + fileName + ".", e);
+        } finally {
+            byteBufferPool.deallocate(buffer);
         }
     }
 }
