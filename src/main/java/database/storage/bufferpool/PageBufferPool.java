@@ -8,17 +8,16 @@ import database.storage.page.Page;
 import java.util.HashMap;
 import java.util.Map;
 
-public class BufferPool {
+public class PageBufferPool {
 
     private final Map<PageId, Page> pages;
     private final PageReplacementStrategy<PageId> strategy;
     private final FileManager fileManager;
 
-    public BufferPool(PageReplacementStrategy<PageId> strategy, int capacity) {
+    public PageBufferPool(PageReplacementStrategy<PageId> strategy, long totalMemory) {
         this.pages = new HashMap<>();
         this.strategy = strategy;
-        this.fileManager = new FileManager(FileExtension.IDB);
-        this.capacity = capacity;
+        this.fileManager = new FileManager(getByteBufferPool(totalMemory), FileExtension.IDB);
     }
 
     public Page getPage(PageId pageId) {
@@ -90,5 +89,11 @@ public class BufferPool {
             flushPage(pageId);
             pages.remove(pageId);
         }
+    }
+
+    private ByteBufferPool getByteBufferPool(long totalMemory) {
+        long defaultMemorySize = totalMemory / 10;
+        long minimumMemorySize = Page.PAGE_SIZE * 30;
+        return new ByteBufferPool(Math.max(defaultMemorySize, minimumMemorySize), Page.PAGE_SIZE);
     }
 }
