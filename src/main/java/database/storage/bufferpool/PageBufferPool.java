@@ -10,7 +10,6 @@ public class BufferPool {
     private final Map<PageId, Page> pages;
     private final PageReplacementStrategy<PageId> strategy;
     private final FileManager fileManager;
-    private final int capacity;
 
     public BufferPool(PageReplacementStrategy<PageId> strategy, int capacity) {
         this.pages = new HashMap<>();
@@ -36,7 +35,7 @@ public class BufferPool {
             return;
         }
 
-        if (pages.size() >= capacity) {
+        if (strategy.shouldEvict()) {
             evictPage(pageId);
         }
 

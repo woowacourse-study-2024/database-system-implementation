@@ -49,6 +49,11 @@ public class LRUStrategy<K> implements PageReplacementStrategy<K> {
     }
 
     @Override
+    public boolean shouldEvict() {
+        return cache.size() >= capacity;
+    }
+
+    @Override
     public Collection<K> keySet() {
         return cache;
     }

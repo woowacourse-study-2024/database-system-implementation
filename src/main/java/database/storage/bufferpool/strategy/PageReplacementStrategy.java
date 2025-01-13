@@ -14,5 +14,7 @@ public interface PageReplacementStrategy<K> {
 
     boolean contains(K key);
 
+    boolean shouldEvict();
+
     Collection<K> keySet();
 }
