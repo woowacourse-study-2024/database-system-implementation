@@ -1,4 +1,4 @@
-package database.engine.page;
+package database.storage.page;
 
 import java.nio.ByteBuffer;
 import java.util.LinkedList;

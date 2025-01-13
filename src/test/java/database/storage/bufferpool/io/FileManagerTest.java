@@ -1,10 +1,10 @@
-package database;
+package database.storage.bufferpool.io;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
-import database.engine.page.FileExtension;
-import database.engine.page.Page;
+import database.storage.page.FileExtension;
+import database.storage.page.Page;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

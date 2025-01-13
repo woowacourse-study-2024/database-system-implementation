@@ -1,7 +1,10 @@
-package database;
+package database.storage.bufferpool;
 
-import database.engine.page.FileExtension;
-import database.engine.page.Page;
+import database.storage.bufferpool.io.ByteBufferPool;
+import database.storage.bufferpool.io.FileManager;
+import database.storage.bufferpool.strategy.PageReplacementStrategy;
+import database.storage.page.FileExtension;
+import database.storage.page.Page;
 import java.util.HashMap;
 import java.util.Map;
 

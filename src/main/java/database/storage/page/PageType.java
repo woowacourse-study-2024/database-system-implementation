@@ -1,4 +1,4 @@
-package database.engine.page;
+package database.storage.page;
 
 import static java.util.Arrays.stream;
 

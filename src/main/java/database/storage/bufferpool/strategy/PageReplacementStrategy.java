@@ -1,4 +1,4 @@
-package database;
+package database.storage.bufferpool.strategy;
 
 import java.util.Collection;
 

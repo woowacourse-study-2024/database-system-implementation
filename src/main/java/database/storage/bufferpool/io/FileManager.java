@@ -1,7 +1,7 @@
-package database;
+package database.storage.bufferpool.io;
 
-import database.engine.page.FileExtension;
-import database.engine.page.Page;
+import database.storage.page.FileExtension;
+import database.storage.page.Page;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
