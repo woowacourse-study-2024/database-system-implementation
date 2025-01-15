@@ -95,7 +95,7 @@ public class MidpointInsertionStrategy<K> implements PageReplacementStrategy<K> 
 
     @Override
     public boolean shouldEvict() {
-        return cache.size() > capacity;
+        return cache.size() >= capacity;
     }
 
     @Override
