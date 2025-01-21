@@ -20,14 +20,14 @@ public class MidpointInsertionStrategy<K> implements PageReplacementStrategy<K> 
     private final Map<K, Node> cache;
     private final int capacity;
     private final int oldSublistSize;
-    private final int threshHoldHits;
+    private final int thresholdHits;
     private Node head;
     private Node tail;
 
-    public MidpointInsertionStrategy(int capacity, int threshHoldHits, int oldSublistPercent) {
+    public MidpointInsertionStrategy(int capacity, int thresholdHits, int oldSublistPercent) {
         this.cache = new HashMap<>();
         this.capacity = capacity;
-        this.threshHoldHits = threshHoldHits;
+        this.thresholdHits = thresholdHits;
         this.oldSublistSize = Math.round((float) (capacity * oldSublistPercent) / 100);
         this.head = null;
         this.tail = null;
@@ -42,7 +42,7 @@ public class MidpointInsertionStrategy<K> implements PageReplacementStrategy<K> 
         Node node = cache.get(key);
         node.accessCount++;
 
-        if (node.accessCount >= threshHoldHits) {
+        if (node.accessCount >= thresholdHits) {
             moveToHead(node);
         }
     }
