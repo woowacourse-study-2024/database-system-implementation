@@ -22,7 +22,7 @@ public class Page {
         FileHeader fileHeader = FileHeader.create(pageNumber, PageType.INDEX, prevPageNumber, nextPageNumber);
         PageHeader pageHeader = PageHeader.create(pageLevel, (short) 0, (short) 0, false);
         UserRecords userRecords = UserRecords.empty();
-        short freeSpace = Page.PAGE_SIZE - FileHeader.HEADER_SIZE - PageHeader.HEADER_SIZE - Short.BYTES;
+        short freeSpace = calculateFreeSpace();
 
         return new Page(fileHeader, pageHeader, userRecords, freeSpace);
     }
@@ -34,6 +34,10 @@ public class Page {
         short freeSpace = buffer.getShort();
 
         return new Page(fileHeader, pageHeader, userRecords, freeSpace);
+    }
+
+    private static short calculateFreeSpace() {
+        return Page.PAGE_SIZE - FileHeader.HEADER_SIZE - PageHeader.HEADER_SIZE - Short.BYTES;
     }
 
     public void serialize(ByteBuffer buffer) {
