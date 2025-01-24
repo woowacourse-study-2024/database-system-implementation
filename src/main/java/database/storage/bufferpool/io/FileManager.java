@@ -14,6 +14,8 @@ public class FileManager {
 
     public static final String DIRECTORY_PATH = "files/data/";
 
+    private static final int MAX_TIME_TO_BLOCK_MS = 2000;
+
     private final ByteBufferPool byteBufferPool;
     private final FileExtension fileExtension;
 
@@ -45,7 +47,7 @@ public class FileManager {
              FileChannel channel = raf.getChannel()) {
 
             long offset = (long) pageNumber * Page.PAGE_SIZE;
-            buffer = byteBufferPool.allocate(1000);
+            buffer = byteBufferPool.allocate(MAX_TIME_TO_BLOCK_MS);
             channel.read(buffer, offset);
 
             buffer.flip();
@@ -67,7 +69,7 @@ public class FileManager {
              FileChannel channel = raf.getChannel()) {
 
             long offset = (long) pageNumber * Page.PAGE_SIZE;
-            buffer = byteBufferPool.allocate(1000);
+            buffer = byteBufferPool.allocate(MAX_TIME_TO_BLOCK_MS);
             page.serialize(buffer);
 
             buffer.rewind();
