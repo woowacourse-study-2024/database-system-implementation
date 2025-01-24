@@ -183,11 +183,11 @@ public class MidpointInsertionStrategy<K> implements PageReplacementStrategy<K> 
     }
 
     private class Node {
-        K key;
-        Node prev, next;
-        int accessCount;
+        private final K key;
+        private Node prev, next;
+        private int accessCount;
 
-        public Node(K key) {
+        private Node(K key) {
             this.key = key;
             this.accessCount = 0;
         }
