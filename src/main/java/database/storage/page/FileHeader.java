@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 
 public class FileHeader {
 
-    public static final int HEADER_SIZE = 13;
+    public static final int HEADER_SIZE = 4 + 1 + 4 + 4;
 
     private final int pageNumber;
     private final PageType pageType;
