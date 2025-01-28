@@ -3,7 +3,8 @@ package database;
 public class Application {
 
     public static void main(String[] args) {
-        DatabaseServer server = new DatabaseServer(3306);
+        ParameterHandler parameterHandler = new ParameterHandler(args);
+        DatabaseServer server = new DatabaseServer(parameterHandler.getPort());
         server.start();
     }
 }
