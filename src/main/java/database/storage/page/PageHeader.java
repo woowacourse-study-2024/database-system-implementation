@@ -29,7 +29,7 @@ public class PageHeader {
         short pageLevel = buffer.getShort();
         short lastInsertPosition = buffer.getShort();
         short recordCount = buffer.getShort();
-        boolean isDirty = buffer.get() != FALSE;
+        boolean isDirty = buffer.get() == TRUE;
 
         return new PageHeader(pageLevel, lastInsertPosition, recordCount, isDirty);
     }
