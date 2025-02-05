@@ -4,27 +4,19 @@ import java.nio.ByteBuffer;
 import java.util.BitSet;
 
 /**
- * ExtentDescriptor
+ * {@code ExtentDescriptor}는 64개의 {@code Page} 묶음인 Extent를 관리하는 역할을 한다.
+ * 각 Extent의 상태와 해당 Extent 내 개별 페이지들의 할당 정보를 포함한다.
  *
- * Extent: 64 pages
- * - extentNumber: 해당 extent 번호를 나타내며 1바이트 크기로 저장 (0 ~ 255)
+ * <p><b>extentNumber:</b> 해당 Extent 번호를 나타내며 1바이트 크기로 저장한다. (0 ~ 255)
+ * <p><b>state:</b> extent 상태를 나타내며 다음과 같은 값 중 하나를 가질 수 있다.
+ *  <ul>
+ *      <li><b>FREE_FLAG:</b> 여유 공간이 있는 페이지가 존재하는 Extent를 나타낸다.</li>
+ *      <li><b>FULL_FLAG</b>: 모든 페이지가 할당되어 여유 공간이 없는 Extent를 나타낸다.</li>
+ *      <li><b>FREE</b>: 아직 전혀 사용되지 않아 전체 할당 가능한 Extent를 나타낸다.</li>
+ *  </ul>
  *
- * - state: extent 상태를 나타내며 다음과 같은 값 중 하나를 가질 수 있다.
- *          FREE        : 이 extent 모든 페이지가 미할당
- *          FREE_FRAG   : 이 extent 일부 페이지는 할당되지 않은 상태
- *          FULL_FAG    : 이 extent 페이지들이 모두 할당 완료
- *
- * - pageState: 각 페이지의 상태를 나타내는 비트맵
- *              단일 비트만을 사용하며
- *              비트 값이 1이면 페이지가 free(페이지가 할당되지 않아 비어있는 상태) 상태를,
- *              0이면 used(이미 사용중인 상태) 상태를 의미한다.
- *
- *  - Total Size: 26byte
- *      = 1byte (extentNumber)
- *      + 8byte (prev NodePointer)
- *      + 8byte (next NodePointer)
- *      + 1byte (extentState)
- *      + 64bit (pageState)
+ * <p><b>pageState:</b> 각 페이지의 상태를 나타내는 비트맵이다.
+ * 비트 값이 1이면 페이지가 free(페이지가 할당되지 않아 비어있는 상태) 상태를, 0이면 used(이미 사용중인 상태) 상태를 의미한다.
  */
 public class ExtentDescriptor {
 
