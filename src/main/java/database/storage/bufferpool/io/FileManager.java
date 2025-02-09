@@ -2,6 +2,7 @@ package database.storage.bufferpool.io;
 
 import database.storage.page.FileExtension;
 import database.storage.page.Page;
+import database.storage.page.PageFactory;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -46,13 +47,13 @@ public class FileManager {
         try (RandomAccessFile raf = new RandomAccessFile(filePath.toFile(), "r");
              FileChannel channel = raf.getChannel()) {
 
-            long offset = (long) pageNumber * Page.PAGE_SIZE;
+            long offset = (long) pageNumber * Page.SIZE;
             buffer = byteBufferPool.allocate(MAX_TIME_TO_BLOCK_MS);
             channel.read(buffer, offset);
 
             buffer.flip();
 
-            return Page.deserialize(buffer);
+            return PageFactory.deserialize(buffer);
         } catch (IOException e) {
             throw new RuntimeException("Failed to load page " + pageNumber + " for table " + fileName + ".", e);
         } finally {
@@ -68,7 +69,7 @@ public class FileManager {
         try (RandomAccessFile raf = new RandomAccessFile(filePath.toFile(), "rw");
              FileChannel channel = raf.getChannel()) {
 
-            long offset = (long) pageNumber * Page.PAGE_SIZE;
+            long offset = (long) pageNumber * Page.SIZE;
             buffer = byteBufferPool.allocate(MAX_TIME_TO_BLOCK_MS);
             page.serialize(buffer);
 

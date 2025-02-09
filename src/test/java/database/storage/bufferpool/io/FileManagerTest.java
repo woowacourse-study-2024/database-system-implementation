@@ -3,8 +3,12 @@ package database.storage.bufferpool.io;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
+import database.storage.page.Data;
 import database.storage.page.FileExtension;
+import database.storage.page.FileHeader;
 import database.storage.page.Page;
+import database.storage.page.PageHeader;
+import database.storage.page.PageType;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,7 +27,7 @@ class FileManagerTest {
 
     @BeforeEach
     void setUp() {
-        ByteBufferPool pool = new ByteBufferPool(Page.PAGE_SIZE * 3, Page.PAGE_SIZE);
+        ByteBufferPool pool = new ByteBufferPool(Page.SIZE * 3, Page.SIZE);
         fileManager = new FileManager(pool, fileExtension);
     }
 
@@ -44,10 +48,18 @@ class FileManagerTest {
     @DisplayName("페이지를 저장한다.")
     @Test
     void writePageTest() {
-        Page page = Page.createIndex(1, -1, -1, (short) 0);
+        // given
+        FileHeader fileHeader = new FileHeader(PageType.DATA, 1, -1, 2);
+        PageHeader pageHeader = new PageHeader((short) 2, (short) 0, (short) 0, false);
+        short freeSpace = Page.SIZE - (FileHeader.SIZE + PageHeader.SIZE + 2);
+        byte[] recordData = new byte[freeSpace];
 
+        Page page = new Data(fileHeader, pageHeader, freeSpace, recordData);
+
+        // when
         fileManager.writePage(page, tableName);
 
+        // then
         Path filePath = Paths.get(FileManager.DIRECTORY_PATH, tableName + fileExtension.getExtension());
         assertThat(Files.exists(filePath)).isTrue();
     }
@@ -55,14 +67,20 @@ class FileManagerTest {
     @DisplayName("페이지를 읽어온다.")
     @Test
     void loadPageTest() {
-        Page page = Page.createIndex(1, -1, -1, (short) 0);
+        // given
+        FileHeader fileHeader = new FileHeader(PageType.DATA, 1, -1, 2);
+        PageHeader pageHeader = new PageHeader((short) 2, (short) 0, (short) 0, false);
+        short freeSpace = Page.SIZE - (FileHeader.SIZE + PageHeader.SIZE + 2);
+        byte[] recordData = new byte[freeSpace];
+
+        Page page = new Data(fileHeader, pageHeader, freeSpace, recordData);
         fileManager.writePage(page, tableName);
 
+        // when
         Page loadedPage = fileManager.loadPage(tableName, page.getPageNumber());
 
         assertAll(
-                () -> assertThat(loadedPage.getPageNumber()).isEqualTo(page.getPageNumber()),
-                () -> assertThat(loadedPage.getFreeSpace()).isEqualTo(page.getFreeSpace())
+                () -> assertThat(loadedPage.getPageNumber()).isEqualTo(page.getPageNumber())
         );
     }
 }

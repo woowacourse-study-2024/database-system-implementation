@@ -3,7 +3,10 @@ package database.storage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
+import database.storage.page.FileHeader;
+import database.storage.page.FspHeader;
 import database.storage.page.Page;
+import database.storage.page.PageType;
 import java.nio.ByteBuffer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,6 +17,7 @@ class FspHeaderTest {
     @Test
     void testSerialize() {
         // given
+        FileHeader fileHeader = new FileHeader(PageType.FSP_HEADER, 0, -1, 1);
         BaseNode freeFrag = new BaseNode(new Pointer(0, 200), new Pointer(0, 200));
         BaseNode fullFrag = new BaseNode(new Pointer(0, 400), new Pointer(0, 600));
         BaseNode free = new BaseNode(new Pointer(0, 300), new Pointer(0, 300));
@@ -21,9 +25,9 @@ class FspHeaderTest {
         entries[0] = 5;
         entries[1] = 3;
 
-        FspHeader header = new FspHeader(1, 0, freeFrag, fullFrag, free, entries);
+        FspHeader header = new FspHeader(fileHeader, 1, 0, freeFrag, fullFrag, free, entries);
 
-        int capacity = Page.PAGE_SIZE;
+        int capacity = Page.SIZE;
         ByteBuffer buffer = ByteBuffer.allocate(capacity);
 
         // when
@@ -32,6 +36,10 @@ class FspHeaderTest {
 
         // then
         assertAll(
+                () -> assertThat(buffer.get()).isEqualTo((byte) 1),
+                () -> assertThat(buffer.getInt()).isEqualTo(0),
+                () -> assertThat(buffer.getInt()).isEqualTo(-1),
+                () -> assertThat(buffer.getInt()).isEqualTo(1),
                 () -> assertThat(buffer.getInt()).isEqualTo(1),
                 () -> assertThat(buffer.getInt()).isEqualTo(0),
                 () -> assertThat(buffer.getInt()).isEqualTo(0),
@@ -55,6 +63,7 @@ class FspHeaderTest {
     @Test
     void testDeserialize() {
         // given
+        FileHeader fileHeader = new FileHeader(PageType.FSP_HEADER, 0, -1, 1);
         BaseNode freeFrag = new BaseNode(new Pointer(0, 200), new Pointer(0, 200));
         BaseNode fullFrag = new BaseNode(new Pointer(0, 400), new Pointer(0, 600));
         BaseNode free = new BaseNode(new Pointer(0, 300), new Pointer(0, 300));
@@ -62,9 +71,9 @@ class FspHeaderTest {
         entries[0] = 5;
         entries[1] = 3;
 
-        FspHeader original = new FspHeader(1, 0, freeFrag, fullFrag, free, entries);
+        FspHeader original = new FspHeader(fileHeader, 1, 0, freeFrag, fullFrag, free, entries);
 
-        int capacity = Page.PAGE_SIZE;
+        int capacity = Page.SIZE;
         ByteBuffer buffer = ByteBuffer.allocate(capacity);
         original.serialize(buffer);
         buffer.flip();
@@ -74,9 +83,19 @@ class FspHeaderTest {
 
         // then
         assertAll(
+                () -> assertThat(deserialized.getFileHeader().getPageType())
+                        .isEqualTo(original.getFileHeader().getPageType()),
+                () -> assertThat(deserialized.getFileHeader().getPageNumber())
+                        .isEqualTo(original.getFileHeader().getPageNumber()),
+                () -> assertThat(deserialized.getFileHeader().getPrevPageNumber())
+                        .isEqualTo(original.getFileHeader().getPrevPageNumber()),
+                () -> assertThat(deserialized.getFileHeader().getNextPageNumber())
+                        .isEqualTo(original.getFileHeader().getNextPageNumber()),
+
                 () -> assertThat(deserialized.getSpaceId()).isEqualTo(original.getSpaceId()),
-                () -> assertThat(deserialized.getFreeFrag().getFirst().getOffset()).isEqualTo(
-                        original.getFreeFrag().getFirst().getOffset()),
+
+                () -> assertThat(deserialized.getFreeFrag().getFirst().getOffset())
+                        .isEqualTo(original.getFreeFrag().getFirst().getOffset()),
                 () -> assertThat(deserialized.getFreeFrag().getFirst().getPageNumber())
                         .isEqualTo(original.getFreeFrag().getFirst().getPageNumber()),
 

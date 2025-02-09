@@ -1,6 +1,6 @@
-package database.storage;
+package database.storage.page;
 
-import database.storage.page.Page;
+import database.storage.BaseNode;
 import java.nio.ByteBuffer;
 
 /**
@@ -19,9 +19,9 @@ import java.nio.ByteBuffer;
  *
  * <p><b>entries</b>: {@code ExtentDescriptor} 엔트리들. 포인터 오프셋을 통해 다른 {@code ExtentDescriptor}에 접근할 수 있다.
  */
-public class FspHeader {
+public class FspHeader extends AbstractPage {
 
-    public static final int ENTRIES_SIZE = Page.PAGE_SIZE - (4 + 4 + BaseNode.SIZE * 3);
+    public static final int ENTRIES_SIZE = Page.SIZE - (FileHeader.SIZE + 4 + 4 + BaseNode.SIZE * 3);
 
     private final int spaceId;
     private int size;
@@ -32,7 +32,16 @@ public class FspHeader {
 
     private byte[] entries;
 
-    public FspHeader(int spaceId, int size, BaseNode freeFrag, BaseNode fullFrag, BaseNode free, byte[] entries) {
+    public FspHeader(
+            FileHeader fileHeader,
+            int spaceId,
+            int size,
+            BaseNode freeFrag,
+            BaseNode fullFrag,
+            BaseNode free,
+            byte[] entries
+    ) {
+        this.fileHeader = fileHeader;
         this.spaceId = spaceId;
         this.size = size;
         this.freeFrag = freeFrag;
@@ -42,6 +51,7 @@ public class FspHeader {
     }
 
     public static FspHeader deserialize(ByteBuffer buffer) {
+        FileHeader fspHeader = FileHeader.deserialize(buffer);
         int spaceId = buffer.getInt();
         int size = buffer.getInt();
 
@@ -52,10 +62,11 @@ public class FspHeader {
         byte[] entries = new byte[ENTRIES_SIZE];
         buffer.get(entries);
 
-        return new FspHeader(spaceId, size, freeFragList, fullFragList, free, entries);
+        return new FspHeader(fspHeader, spaceId, size, freeFragList, fullFragList, free, entries);
     }
 
-    public void serialize(ByteBuffer buffer) {
+    @Override
+    protected void serializeBody(ByteBuffer buffer) {
         buffer.putInt(spaceId);
         buffer.putInt(size);
 
