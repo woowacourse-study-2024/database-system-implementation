@@ -10,33 +10,33 @@ public class PageHeader {
     private static final int FALSE = 0;
 
     private short pageLevel;
-    private short lastInsertPosition;
+    private short lastInsertOffset;
     private short recordCount;
     private boolean isDirty;
 
-    private PageHeader(short pageLevel, short lastInsertPosition, short recordCount, boolean isDirty) {
+    private PageHeader(short pageLevel, short lastInsertOffset, short recordCount, boolean isDirty) {
         this.pageLevel = pageLevel;
-        this.lastInsertPosition = lastInsertPosition;
+        this.lastInsertOffset = lastInsertOffset;
         this.recordCount = recordCount;
         this.isDirty = isDirty;
     }
 
-    public static PageHeader create(short pageLevel, short lastInsertPosition, short recordCount, boolean isDirty) {
-        return new PageHeader(pageLevel, lastInsertPosition, recordCount, isDirty);
+    public static PageHeader create(short pageLevel, short lastInsertOffset, short recordCount, boolean isDirty) {
+        return new PageHeader(pageLevel, lastInsertOffset, recordCount, isDirty);
     }
 
     public static PageHeader deserialize(ByteBuffer buffer) {
         short pageLevel = buffer.getShort();
-        short lastInsertPosition = buffer.getShort();
+        short lastInsertOffset = buffer.getShort();
         short recordCount = buffer.getShort();
         boolean isDirty = buffer.get() == TRUE;
 
-        return new PageHeader(pageLevel, lastInsertPosition, recordCount, isDirty);
+        return new PageHeader(pageLevel, lastInsertOffset, recordCount, isDirty);
     }
 
     public void serialize(ByteBuffer buffer) {
         buffer.putShort(pageLevel);
-        buffer.putShort(lastInsertPosition);
+        buffer.putShort(lastInsertOffset);
         buffer.putShort(recordCount);
         buffer.put((byte) (isDirty ? TRUE : FALSE));
     }
@@ -53,8 +53,8 @@ public class PageHeader {
         return pageLevel;
     }
 
-    public short getLastInsertPosition() {
-        return lastInsertPosition;
+    public short getLastInsertOffset() {
+        return lastInsertOffset;
     }
 
     public short getRecordCount() {
