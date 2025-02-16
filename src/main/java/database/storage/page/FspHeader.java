@@ -34,7 +34,7 @@ public class FspHeader extends AbstractPage {
     private BaseNode fullFrag;
     private BaseNode free;
 
-    private byte[] entries;
+    private final byte[] entries;
 
     public FspHeader(
             FileHeader fileHeader,
