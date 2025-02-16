@@ -1,23 +1,23 @@
 package database.storage.bufferpool;
 
-import database.storage.bufferpool.io.ByteBufferPool;
 import database.storage.bufferpool.io.FileManager;
 import database.storage.bufferpool.strategy.PageReplacementStrategy;
-import database.storage.page.FileExtension;
+import database.storage.page.Data;
 import database.storage.page.Page;
 import java.util.HashMap;
 import java.util.Map;
 
-public class PageBufferPool {
+public class BufferPool {
 
     private final Map<PageId, Page> pages;
     private final PageReplacementStrategy<PageId> strategy;
+
     private final FileManager fileManager;
 
-    public PageBufferPool(PageReplacementStrategy<PageId> strategy, long totalMemory) {
+    public BufferPool(PageReplacementStrategy<PageId> strategy, FileManager fileManager) {
         this.pages = new HashMap<>();
         this.strategy = strategy;
-        this.fileManager = new FileManager(getByteBufferPool(totalMemory), FileExtension.IDB);
+        this.fileManager = fileManager;
     }
 
     public Page getPage(PageId pageId) {
@@ -28,21 +28,23 @@ public class PageBufferPool {
 
         Page page = fileManager.loadPage(pageId.fileName(), pageId.pageNumber());
         strategy.put(pageId);
+        pages.put(pageId, page);
         return page;
     }
 
-    public void putPage(PageId pageId, Page page) {
+    public Page putPage(PageId pageId, Page page) {
         if (pages.containsKey(pageId)) {
             strategy.access(pageId);
-            return;
+            return pages.get(pageId);
         }
 
         if (strategy.shouldEvict()) {
-            evictPage(pageId);
+            evictPage();
         }
 
-        pages.put(pageId, page);
         strategy.put(pageId);
+        pages.put(pageId, page);
+        return page;
     }
 
     public void flushPage(PageId pageId) {
@@ -50,7 +52,7 @@ public class PageBufferPool {
             return;
         }
 
-        Page page = pages.get(pageId);
+        Data page = (Data) pages.get(pageId);
         if (!page.isDirty()) {
             return;
         }
@@ -59,41 +61,14 @@ public class PageBufferPool {
         page.makeClean();
     }
 
-    public void flushAllPages() {
-        for (PageId pageId : strategy.keySet()) {
-            flushPage(pageId);
-        }
-    }
-
-    public void removePage(PageId pageId) {
-        if (!pages.containsKey(pageId)) {
-            return;
-        }
-
-        Page page = pages.get(pageId);
-        if (page.isDirty()) {
-            flushPage(pageId);
-        }
-
-        strategy.remove(pageId);
-        pages.remove(pageId);
-    }
-
     public boolean containsPage(PageId pageId) {
         return pages.containsKey(pageId);
     }
 
-    private void evictPage(PageId pageId) {
+    private void evictPage() {
         PageId evicted = strategy.evict();
-        if (evicted != null && pages.containsKey(evicted)) {
-            flushPage(pageId);
-            pages.remove(pageId);
+        if (evicted != null) {
+            pages.remove(evicted);
         }
-    }
-
-    private ByteBufferPool getByteBufferPool(long totalMemory) {
-        long defaultMemorySize = totalMemory / 10;
-        long minimumMemorySize = Page.PAGE_SIZE * 30;
-        return new ByteBufferPool(Math.max(defaultMemorySize, minimumMemorySize), Page.PAGE_SIZE);
     }
 }

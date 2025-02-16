@@ -15,6 +15,15 @@ public class Data extends AbstractPage {
         this.freeSpace = freeSpace;
     }
 
+    public static Data createNew(int pageNumber) {
+        FileHeader fileHeader = FileHeader.createNew(PageType.DATA, pageNumber);
+        PageHeader pageHeader = PageHeader.createNew();
+        short freeSpace = Page.SIZE - (FileHeader.SIZE + PageHeader.SIZE + 2);
+        byte[] recordData = new byte[freeSpace];
+
+        return new Data(fileHeader, pageHeader, freeSpace, recordData);
+    }
+
     public static Data deserialize(ByteBuffer buffer) {
         FileHeader fileHeader = FileHeader.deserialize(buffer);
         PageHeader pageHeader = PageHeader.deserialize(buffer);

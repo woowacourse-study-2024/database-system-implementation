@@ -19,6 +19,14 @@ public class PageHeader {
         this.isDirty = isDirty;
     }
 
+    public static PageHeader createNew() {
+        short lastInsertOffset = (short) 0;
+        short recordCount = (short) 0;
+        boolean isDirty = false;
+
+        return new PageHeader(lastInsertOffset, recordCount, isDirty);
+    }
+
     public static PageHeader deserialize(ByteBuffer buffer) {
         short lastInsertOffset = buffer.getShort();
         short recordCount = buffer.getShort();

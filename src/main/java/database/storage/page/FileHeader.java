@@ -18,6 +18,10 @@ public class FileHeader {
         this.nextPageNumber = nextPageNumber;
     }
 
+    public static FileHeader createNew(PageType pageType, int pageNumber) {
+        return new FileHeader(pageType, pageNumber, -1, -1);
+    }
+
     public static FileHeader deserialize(ByteBuffer buffer) {
         PageType pageType = PageType.fromCode(buffer.get());
         int pageNumber = buffer.getInt();

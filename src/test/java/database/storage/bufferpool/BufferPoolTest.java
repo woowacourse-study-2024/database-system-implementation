@@ -7,6 +7,7 @@ import database.storage.bufferpool.io.ByteBufferPool;
 import database.storage.bufferpool.io.FileManager;
 import database.storage.bufferpool.strategy.LRUStrategy;
 import database.storage.bufferpool.strategy.PageReplacementStrategy;
+import database.storage.page.Data;
 import database.storage.page.FileExtension;
 import database.storage.page.Page;
 import java.io.IOException;
@@ -18,17 +19,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-class PageBufferPoolTest {
+class BufferPoolTest {
 
     private final FileExtension fileExtension = FileExtension.IDB;
-    private final long totalMemory = Page.PAGE_SIZE * 3;
     private final String tableName = "jazz";
 
     private FileManager fileManager;
 
     @BeforeEach
     void setUp() {
-        ByteBufferPool byteBufferPool = new ByteBufferPool(Page.PAGE_SIZE * 3, Page.PAGE_SIZE);
+        long totalMemory = Page.SIZE * 3;
+        ByteBufferPool byteBufferPool = new ByteBufferPool(totalMemory, Page.SIZE);
         fileManager = new FileManager(byteBufferPool, fileExtension);
     }
 
@@ -46,37 +47,35 @@ class PageBufferPoolTest {
         }
     }
 
-
     @DisplayName("페이지가 버퍼 풀에 존재하지 않으면 디스크에서 페이지를 불러온다.")
     @Test
     void testLoadPageFromDisk() {
-        //given
-        Page page = Page.createIndex(1, -1, -1, (short) 0);
+        // given
+        Page page = Data.createNew(3);
         fileManager.writePage(page, tableName);
 
         int capacity = 3;
         PageReplacementStrategy<PageId> strategy = new LRUStrategy<>(capacity);
-        PageBufferPool pool = new PageBufferPool(strategy, totalMemory);
+        BufferPool pool = new BufferPool(strategy, fileManager);
 
-        //when
+        // when
         PageId pageId = new PageId(tableName, page.getPageNumber());
-        Page loadedPage = pool.getPage(pageId);
 
-        //then
+        // then
         assertAll(
-                () -> assertThat(loadedPage.getPageNumber()).isEqualTo(page.getPageNumber()),
-                () -> assertThat(loadedPage.getPageHeader().isDirty()).isFalse(),
-                () -> assertThat(loadedPage.getFreeSpace()).isEqualTo(page.getFreeSpace())
+                () -> assertThat(pool.containsPage(pageId)).isEqualTo(false),
+                () -> assertThat(pool.getPage(pageId).getPageNumber()).isEqualTo(page.getPageNumber()),
+                () -> assertThat(pool.containsPage(pageId)).isEqualTo(true)
         );
     }
 
     @DisplayName("LRU 전략을 사용하는 버퍼 풀은 페이지 추가 시 가장 오래 된 페이지가 제거되어야 한다.")
     @Test
     void testPutPageWithLruStrategy() {
-        //given
-        Page page1 = Page.createIndex(1, -1, -1, (short) 0);
-        Page page2 = Page.createIndex(2, -1, -1, (short) 0);
-        Page page3 = Page.createIndex(3, -1, -1, (short) 0);
+        // given
+        Page page1 = Data.createNew(10);
+        Page page2 = Data.createNew(11);
+        Page page3 = Data.createNew(12);
 
         fileManager.writePage(page1, tableName);
         fileManager.writePage(page2, tableName);
@@ -84,16 +83,16 @@ class PageBufferPoolTest {
 
         int capacity = 3;
         PageReplacementStrategy<PageId> strategy = new LRUStrategy<>(capacity);
-        PageBufferPool pool = new PageBufferPool(strategy, totalMemory);
+        BufferPool pool = new BufferPool(strategy, fileManager);
 
-        //when
-        Page addedPage = Page.createIndex(4, -1, -1, (short) 0);
+        // when
+        Page addedPage = Data.createNew(13);
         PageId addedpageId = new PageId(tableName, addedPage.getPageNumber());
         pool.putPage(addedpageId, addedPage);
 
         PageId removedPageId = new PageId(tableName, page1.getPageNumber());
 
-        //then
+        // then
         assertAll(
                 () -> assertThat(pool.containsPage(removedPageId)).isFalse(),
                 () -> assertThat(pool.containsPage(addedpageId)).isTrue()
@@ -103,41 +102,22 @@ class PageBufferPoolTest {
     @DisplayName("플러시된 페이지는 클린 상태여야한다.")
     @Test
     void testFlushPageMarksPageAsClean() {
-        //given
-        Page page = Page.createIndex(1, -1, -1, (short) 0);
+        // given
+        Data page = Data.createNew(10);
         PageId pageId = new PageId(tableName, page.getPageNumber());
         page.makeDirty();
 
         int capacity = 3;
         PageReplacementStrategy<PageId> strategy = new LRUStrategy<>(capacity);
-        PageBufferPool pool = new PageBufferPool(strategy, totalMemory);
+        BufferPool pool = new BufferPool(strategy, fileManager);
 
         pool.putPage(pageId, page);
 
-        //when
+        // when
         pool.flushPage(pageId);
 
-        //then
-        assertThat(pool.getPage(pageId).isDirty()).isFalse();
-    }
-
-    @DisplayName("버퍼 풀에서 페이지를 제거한다.")
-    @Test
-    void testRemovePage() {
-        //given
-        Page page = Page.createIndex(1, -1, -1, (short) 0);
-        PageId pageId = new PageId(tableName, page.getPageNumber());
-
-        int capacity = 3;
-        PageReplacementStrategy<PageId> strategy = new LRUStrategy<>(capacity);
-        PageBufferPool pool = new PageBufferPool(strategy, totalMemory);
-
-        pool.putPage(pageId, page);
-
-        //when
-        pool.removePage(pageId);
-
-        //then
-        assertThat(pool.containsPage(pageId)).isFalse();
+        // then
+        Data flushedPage = (Data) pool.getPage(pageId);
+        assertThat(flushedPage.isDirty()).isFalse();
     }
 }
