@@ -6,8 +6,8 @@ public class BaseNode {
 
     public static final int SIZE = Pointer.SIZE * 2;
 
-    private Pointer first;
-    private Pointer last;
+    private final Pointer first;
+    private final Pointer last;
 
     public BaseNode(Pointer first, Pointer last) {
         this.first = first;
