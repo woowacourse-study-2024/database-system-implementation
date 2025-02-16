@@ -3,6 +3,7 @@ package database.storage.page;
 import static java.util.Arrays.stream;
 
 public enum RecordType {
+
     CONVENTIONAL(0),
     NODE_POINTER(1),
     INFIMUM(2),
