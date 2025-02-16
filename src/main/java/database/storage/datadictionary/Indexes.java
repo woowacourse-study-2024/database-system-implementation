@@ -46,8 +46,4 @@ public class Indexes {
                 .mapToInt(Index::getByteSize)
                 .sum();
     }
-
-    public List<Index> getIndexes() {
-        return indexes;
-    }
 }

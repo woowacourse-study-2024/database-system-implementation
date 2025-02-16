@@ -50,10 +50,6 @@ public class Metadata {
         indexes.serialize(buffer);
     }
 
-    public boolean isSameTableName(String tableName) {
-        return this.tableName.equalsIgnoreCase(tableName);
-    }
-
     public Index getClusteredIndex() {
         return indexes.getClustered();
     }
@@ -84,9 +80,5 @@ public class Metadata {
 
     public byte getIndexCount() {
         return indexCount;
-    }
-
-    public Indexes getIndexes() {
-        return indexes;
     }
 }
