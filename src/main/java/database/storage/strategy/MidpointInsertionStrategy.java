@@ -127,9 +127,6 @@ public class MidpointInsertionStrategy<K> implements PageReplacementStrategy<K> 
         } else {
             tail = prev;
         }
-
-        prev = null;
-        next = null;
     }
 
     private void addToHead(Node node) {
@@ -143,20 +140,6 @@ public class MidpointInsertionStrategy<K> implements PageReplacementStrategy<K> 
 
         if (tail == null) {
             tail = node;
-        }
-    }
-
-    private void addToTail(Node node) {
-        node.prev = tail;
-        node.next = null;
-
-        if (tail != null) {
-            tail.next = node;
-        }
-        tail = node;
-
-        if (head == null) {
-            head = node;
         }
     }
 
