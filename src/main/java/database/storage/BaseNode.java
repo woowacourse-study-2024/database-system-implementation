@@ -14,6 +14,10 @@ public class BaseNode {
         this.last = last;
     }
 
+    public static BaseNode createNew() {
+        return new BaseNode(Pointer.createNew(), Pointer.createNew());
+    }
+
     public static BaseNode deserialize(ByteBuffer buffer) {
         Pointer first = Pointer.deserialize(buffer);
         Pointer last = Pointer.deserialize(buffer);
@@ -24,6 +28,10 @@ public class BaseNode {
     public void serialize(ByteBuffer buffer) {
         first.serialize(buffer);
         last.serialize(buffer);
+    }
+
+    public boolean isEmpty() {
+        return first.isEmpty() && last.isEmpty();
     }
 
     public Pointer getFirst() {

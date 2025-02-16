@@ -1,6 +1,7 @@
 package database.storage;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 public class Pointer {
 
@@ -14,6 +15,10 @@ public class Pointer {
         this.offset = offset;
     }
 
+    public static Pointer createNew() {
+        return new Pointer(-1, -1);
+    }
+
     public static Pointer deserialize(ByteBuffer buffer) {
         int pageNumber = buffer.getInt();
         int offset = buffer.getInt();
@@ -25,11 +30,32 @@ public class Pointer {
         buffer.putInt(offset);
     }
 
+    public boolean isEmpty() {
+        return pageNumber == -1 && offset == -1;
+    }
+
     public int getPageNumber() {
         return pageNumber;
     }
 
     public int getOffset() {
         return offset;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Pointer pointer = (Pointer) o;
+        return pageNumber == pointer.pageNumber && offset == pointer.offset;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(pageNumber, offset);
     }
 }

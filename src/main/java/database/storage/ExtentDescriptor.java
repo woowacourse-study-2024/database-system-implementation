@@ -25,9 +25,9 @@ public class ExtentDescriptor {
     public static final int BITMAP_BYTE_SIZE = 8;
 
     private final byte extentNumber;
-    private final Pointer prev;
-    private final Pointer next;
-    private final ExtentState state;
+    private Pointer prev;
+    private Pointer next;
+    private ExtentState state;
     private final BitSet pageState;
 
     public ExtentDescriptor(
@@ -62,6 +62,36 @@ public class ExtentDescriptor {
         serializePageState(buffer);
     }
 
+    public void changeState(ExtentState newState) {
+        state = newState;
+    }
+
+    public int allocatePage() {
+        int freePageNumber = pageState.nextSetBit(0);
+        pageState.clear(freePageNumber);
+        return freePageNumber;
+    }
+
+    public void deallocatePage(int pageIndex) {
+        pageState.set(pageIndex, true);
+    }
+
+    public boolean isFullyAllocated() {
+        return pageState.isEmpty();
+    }
+
+    public boolean isFree() {
+        return state == ExtentState.FREE;
+    }
+
+    public boolean isFreeFrag() {
+        return state == ExtentState.FREE_FRAG;
+    }
+
+    public boolean isFullFrag() {
+        return state == ExtentState.FULL_FRAG;
+    }
+
     private static BitSet deserializePageState(ByteBuffer buffer) {
         byte[] bitmap = new byte[BITMAP_BYTE_SIZE];
         buffer.get(bitmap);
@@ -73,6 +103,14 @@ public class ExtentDescriptor {
         byte[] bitmap = new byte[BITMAP_BYTE_SIZE];
         System.arraycopy(byteArray, 0, bitmap, 0, Math.min(byteArray.length, BITMAP_BYTE_SIZE));
         buffer.put(bitmap);
+    }
+
+    public void changePrev(Pointer pointer) {
+        prev = pointer;
+    }
+
+    public void changeNext(Pointer pointer) {
+        next = pointer;
     }
 
     public byte getExtentNumber() {

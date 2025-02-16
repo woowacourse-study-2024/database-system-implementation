@@ -1,7 +1,11 @@
 package database.storage.page;
 
 import database.storage.BaseNode;
+import database.storage.ExtentDescriptor;
+import database.storage.ExtentState;
+import database.storage.Pointer;
 import java.nio.ByteBuffer;
+import java.util.function.BiConsumer;
 
 /**
  * {@code FspHeader}는 {@code FileSpace}의 0번째 페이지로, 메타데이터와 {@code ExtentDescriptor} 엔트리들을 관리하는 역할을 한다.
@@ -75,6 +79,133 @@ public class FspHeader extends AbstractPage {
         free.serialize(buffer);
 
         buffer.put(entries);
+    }
+
+    public int allocatePage() {
+        if (!freeFrag.isEmpty()) {
+            return allocatePageFromList(freeFrag, this::moveExtentFromFreeFragToFullFrag);
+        }
+
+        return allocatePageFromList(free, this::moveExtentFromFreeToFreeFrag);
+    }
+
+    private int allocatePageFromList(BaseNode list, BiConsumer<ExtentDescriptor, Pointer> move) {
+        Pointer currentPointer = list.getFirst();
+        ExtentDescriptor currentDescriptor = getDescriptor(currentPointer);
+
+        int pageIndex = currentDescriptor.allocatePage();
+        size++;
+
+        if (currentDescriptor.isFullyAllocated()) {
+            currentDescriptor.changeState(ExtentState.FULL_FRAG);
+        }
+        if (currentDescriptor.isFree()) {
+            currentDescriptor.changeState(ExtentState.FREE_FRAG);
+        }
+
+        move.accept(currentDescriptor, currentPointer);
+        return getGlobalPageNumber(currentDescriptor, pageIndex);
+    }
+
+    public void deallocatePage(int globalPageNumber) {
+        int extentNumber = getExtentNumber(globalPageNumber);
+        int pageIndex = getPageIndex(globalPageNumber);
+
+        int offset = extentNumber * ExtentDescriptor.SIZE;
+
+        Pointer currentPointer = getPointerForExtent(extentNumber);
+        ExtentDescriptor currentDescriptor = getDescriptor(currentPointer);
+
+        currentDescriptor.deallocatePage(pageIndex);
+        size--;
+
+        if (currentDescriptor.isFullFrag() && !currentDescriptor.isFullyAllocated()) {
+            currentDescriptor.changeState(ExtentState.FREE_FRAG);
+            moveExtentFromFullFragToFreeFrag(currentDescriptor, currentPointer);
+        }
+        if (currentDescriptor.isFreeFrag() && currentDescriptor.isFree()) {
+            currentDescriptor.changeState(ExtentState.FREE);
+            moveExtentFromFreeFragToFree(currentDescriptor, currentPointer);
+        }
+
+        ByteBuffer outBuffer = ByteBuffer.wrap(entries);
+        outBuffer.position(offset);
+        currentDescriptor.serialize(outBuffer);
+    }
+
+    private void moveExtentFromFreeFragToFullFrag(ExtentDescriptor currentDescriptor, Pointer currentPointer) {
+        freeFrag = removePointer(freeFrag, currentDescriptor, currentPointer);
+        fullFrag = addPointer(fullFrag, currentDescriptor, currentPointer);
+    }
+
+    private void moveExtentFromFreeToFreeFrag(ExtentDescriptor currentDescriptor, Pointer currentPointer) {
+        free = removePointer(free, currentDescriptor, currentPointer);
+        freeFrag = addPointer(freeFrag, currentDescriptor, currentPointer);
+    }
+
+    private void moveExtentFromFullFragToFreeFrag(ExtentDescriptor currentDescriptor, Pointer currentPointer) {
+        fullFrag = removePointer(fullFrag, currentDescriptor, currentPointer);
+        freeFrag = addPointer(freeFrag, currentDescriptor, currentPointer);
+    }
+
+    private void moveExtentFromFreeFragToFree(ExtentDescriptor currentDescriptor, Pointer currentPointer) {
+        freeFrag = removePointer(freeFrag, currentDescriptor, currentPointer);
+        free = addPointer(free, currentDescriptor, currentPointer);
+    }
+
+    private Pointer getPointerForExtent(int extentNumber) {
+        int offset = extentNumber * ExtentDescriptor.SIZE;
+        return new Pointer(0, offset);
+    }
+
+    private BaseNode removePointer(BaseNode list, ExtentDescriptor currentDescriptor, Pointer currentPointer) {
+        if (list.isEmpty()) {
+            return list;
+        }
+
+        currentDescriptor.changePrev(Pointer.createNew());
+        currentDescriptor.changeNext(Pointer.createNew());
+
+        if (list.getFirst().equals(currentPointer)) {
+            if (list.getLast().equals(currentPointer)) {
+                return BaseNode.createNew();
+            }
+
+            return new BaseNode(currentDescriptor.getNext(), list.getLast());
+        }
+
+        if (list.getLast().equals(currentPointer)) {
+            return new BaseNode(list.getFirst(), currentDescriptor.getPrev());
+        }
+
+        return list;
+    }
+
+    private BaseNode addPointer(BaseNode list, ExtentDescriptor currentDescriptor, Pointer currentPointer) {
+        if (list.isEmpty()) {
+            return new BaseNode(currentPointer, currentPointer);
+        }
+
+        currentDescriptor.changePrev(list.getLast());
+        return new BaseNode(list.getFirst(), currentPointer);
+    }
+
+    public ExtentDescriptor getDescriptor(Pointer pointer) {
+        ByteBuffer buffer = ByteBuffer.wrap(entries);
+        buffer.position(pointer.getOffset());
+        return ExtentDescriptor.deserialize(buffer);
+    }
+
+    private int getGlobalPageNumber(ExtentDescriptor extent, int pageIndex) {
+        return extent.getExtentNumber() * ExtentDescriptor.PAGES_PER_EXTENT + pageIndex;
+    }
+
+    private int getPageIndex(int globalPageNumber) {
+        return globalPageNumber % ExtentDescriptor.PAGES_PER_EXTENT;
+    }
+
+    private int getExtentNumber(int globalPageNumber) {
+        return globalPageNumber / ExtentDescriptor.PAGES_PER_EXTENT;
     }
 
     public int getSpaceId() {
