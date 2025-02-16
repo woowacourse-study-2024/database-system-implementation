@@ -1,36 +1,34 @@
 package database.storage.page;
 
-import java.nio.ByteBuffer;
+import java.util.List;
 
 public class Record {
 
-    private final short nextRecordOffset;
-    private final byte[] data;
+    private final RecordHeader recordHeader;
+    private final short length;
+    private final List<Field> key;
+    private final List<Field> row;
 
-    private Record(short nextRecordOffset, byte[] data) {
-        this.nextRecordOffset = nextRecordOffset;
-        this.data = data;
+    private Record(RecordHeader recordHeader, short length, List<Field> key, List<Field> row) {
+        this.recordHeader = recordHeader;
+        this.length = length;
+        this.key = key;
+        this.row = row;
     }
 
-    public static Record deserialize(ByteBuffer buffer, int currentPosition) {
-        short nextRecordOffset = buffer.getShort();
-        int dataLength = nextRecordOffset - currentPosition - 2;
-        byte[] data = new byte[dataLength];
-        buffer.get(data);
-
-        return new Record(nextRecordOffset, data);
+    public RecordHeader getRecordHeader() {
+        return recordHeader;
     }
 
-    public void serialize(ByteBuffer buffer) {
-        buffer.putShort(nextRecordOffset);
-        buffer.put(data);
+    public short getLength() {
+        return length;
     }
 
-    public short getNextRecordOffset() {
-        return nextRecordOffset;
+    public List<Field> getKey() {
+        return key;
     }
 
-    public byte[] getData() {
-        return data;
+    public List<Field> getRow() {
+        return row;
     }
 }

@@ -5,6 +5,7 @@ import database.storage.bufferpool.PageId;
 import database.storage.page.Data;
 import database.storage.page.FspHeader;
 import database.storage.page.Page;
+import database.storage.page.Record;
 
 public class TableSpace {
 
@@ -29,5 +30,9 @@ public class TableSpace {
         int pageNumber = page.getPageNumber();
         fspHeader.deallocatePage(pageNumber);
         bufferPool.putPage(new PageId(fileName, pageNumber), page);
+    }
+
+    public void insertRecord(int rootPageNumber, Record record) {
+
     }
 }
