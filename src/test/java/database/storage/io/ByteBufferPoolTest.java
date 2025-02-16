@@ -71,7 +71,7 @@ class ByteBufferPoolTest {
     @Test
     void testDelayedAllocation() {
         ByteBufferPool pool = new ByteBufferPool(1, 1);
-        ByteBuffer buffer = pool.allocate(maxTimeToBlockMs);
+        pool.allocate(maxTimeToBlockMs);
 
         assertThrows(IllegalStateException.class, () -> pool.allocate(maxTimeToBlockMs));
     }
