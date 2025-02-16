@@ -50,7 +50,7 @@ class FileManagerTest {
     void writePageTest() {
         // given
         FileHeader fileHeader = new FileHeader(PageType.DATA, 1, -1, 2);
-        PageHeader pageHeader = new PageHeader((short) 2, (short) 0, (short) 0, false);
+        PageHeader pageHeader = new PageHeader((short) 2, (short) 0, false);
         short freeSpace = Page.SIZE - (FileHeader.SIZE + PageHeader.SIZE + 2);
         byte[] recordData = new byte[freeSpace];
 
@@ -69,7 +69,7 @@ class FileManagerTest {
     void loadPageTest() {
         // given
         FileHeader fileHeader = new FileHeader(PageType.DATA, 1, -1, 2);
-        PageHeader pageHeader = new PageHeader((short) 2, (short) 0, (short) 0, false);
+        PageHeader pageHeader = new PageHeader((short) 2, (short) 0, false);
         short freeSpace = Page.SIZE - (FileHeader.SIZE + PageHeader.SIZE + 2);
         byte[] recordData = new byte[freeSpace];
 
