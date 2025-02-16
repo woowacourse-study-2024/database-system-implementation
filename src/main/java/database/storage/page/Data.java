@@ -1,5 +1,6 @@
 package database.storage.page;
 
+import database.storage.page.data.PageHeader;
 import java.nio.ByteBuffer;
 
 public class Data extends AbstractPage {

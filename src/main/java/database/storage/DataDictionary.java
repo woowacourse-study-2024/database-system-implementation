@@ -1,7 +1,7 @@
 package database.storage;
 
-import database.storage.bufferpool.strategy.PageReplacementStrategy;
-import database.storage.table.Metadata;
+import database.storage.datadictionary.Metadata;
+import database.storage.strategy.PageReplacementStrategy;
 import java.util.HashMap;
 import java.util.Map;
 

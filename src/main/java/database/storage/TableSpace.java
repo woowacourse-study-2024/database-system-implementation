@@ -1,11 +1,10 @@
 package database.storage;
 
-import database.storage.bufferpool.BufferPool;
 import database.storage.bufferpool.PageId;
 import database.storage.page.Data;
 import database.storage.page.FspHeader;
 import database.storage.page.Page;
-import database.storage.page.Record;
+import database.storage.record.Record;
 
 public class TableSpace {
 

@@ -1,9 +1,9 @@
 package database.storage.page;
 
-import database.storage.BaseNode;
-import database.storage.ExtentDescriptor;
-import database.storage.ExtentState;
-import database.storage.Pointer;
+import database.storage.page.fspheader.BaseNode;
+import database.storage.page.fspheader.ExtentDescriptor;
+import database.storage.page.fspheader.ExtentState;
+import database.storage.page.fspheader.Pointer;
 import java.nio.ByteBuffer;
 import java.util.function.BiConsumer;
 

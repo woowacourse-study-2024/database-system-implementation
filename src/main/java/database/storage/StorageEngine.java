@@ -1,8 +1,7 @@
 package database.storage;
 
-import database.storage.bufferpool.BufferPool;
-import database.storage.page.Record;
-import database.storage.table.Metadata;
+import database.storage.datadictionary.Metadata;
+import database.storage.record.Record;
 
 public class StorageEngine {
 
