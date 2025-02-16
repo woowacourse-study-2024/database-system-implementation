@@ -19,6 +19,14 @@ public class TableSpace {
         this.bufferPool = bufferPool;
     }
 
+    public Page readPage(int pageNumber) {
+        return bufferPool.getPage(new PageId(fileName, pageNumber));
+    }
+
+    public void writePage(Page page) {
+        bufferPool.putPage(new PageId(fileName, page.getPageNumber()), page);
+    }
+
     public Page allocateFreePage() {
         int pageNumber = fspHeader.allocatePage();
         Page page = Data.createNew(pageNumber);
