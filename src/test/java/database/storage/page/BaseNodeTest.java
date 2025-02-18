@@ -18,7 +18,7 @@ class BaseNodeTest {
         Pointer first = new Pointer(0, 100);
         Pointer last = new Pointer(0, 600);
 
-        BaseNode baseNode = new BaseNode(first, last);
+        BaseNode baseNode = new BaseNode((short) 0, first, last);
 
         int capacity = BaseNode.SIZE;
         ByteBuffer buffer = ByteBuffer.allocate(capacity);
@@ -29,6 +29,7 @@ class BaseNodeTest {
 
         // then
         assertAll(
+                () -> assertThat(buffer.getShort()).isEqualTo((short) 0),
                 () -> assertThat(buffer.getInt()).isEqualTo(0),
                 () -> assertThat(buffer.getInt()).isEqualTo(100),
                 () -> assertThat(buffer.getInt()).isEqualTo(0),
@@ -43,7 +44,7 @@ class BaseNodeTest {
         Pointer first = new Pointer(0, 100);
         Pointer last = new Pointer(0, 600);
 
-        BaseNode original = new BaseNode(first, last);
+        BaseNode original = new BaseNode((short) 0, first, last);
 
         int capacity = BaseNode.SIZE;
         ByteBuffer buffer = ByteBuffer.allocate(capacity);
@@ -55,6 +56,8 @@ class BaseNodeTest {
 
         // then
         assertAll(
+                () -> assertThat(deserialized.getLength()).isEqualTo(original.getLength()),
+
                 () -> assertThat(deserialized.getFirst().getPageNumber())
                         .isEqualTo(original.getFirst().getPageNumber()),
                 () -> assertThat(deserialized.getFirst().getOffset())
