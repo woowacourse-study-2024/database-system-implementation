@@ -30,6 +30,22 @@ public class BaseNode {
         last.serialize(buffer);
     }
 
+    public void changeFirst(Pointer pointer) {
+        if (isEmpty() || first.equals(last)) {
+            first = last = pointer;
+            return;
+        }
+        first = pointer;
+    }
+
+    public void changeLast(Pointer pointer) {
+        if (isEmpty()) {
+            first = last = pointer;
+            return;
+        }
+        last = pointer;
+    }
+
     public boolean isEmpty() {
         return first.isEmpty() && last.isEmpty();
     }

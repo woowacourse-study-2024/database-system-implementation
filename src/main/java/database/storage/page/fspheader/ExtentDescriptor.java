@@ -20,23 +20,17 @@ import java.util.BitSet;
  */
 public class ExtentDescriptor {
 
-    public static final int SIZE = 1 + 8 + 8 + 1 + 8;
+    public static final int SIZE = 2 + 8 + 8 + 1 + 8;
     public static final int PAGES_PER_EXTENT = 64;
     public static final int BITMAP_BYTE_SIZE = 8;
 
-    private final byte extentNumber;
+    private final short extentNumber;
     private Pointer prev;
     private Pointer next;
     private ExtentState state;
     private final BitSet pageState;
 
-    public ExtentDescriptor(
-            byte extentNumber,
-            Pointer prev,
-            Pointer next,
-            ExtentState state,
-            BitSet pageState
-    ) {
+    public ExtentDescriptor(short extentNumber, Pointer prev, Pointer next, ExtentState state, BitSet pageState) {
         this.extentNumber = extentNumber;
         this.prev = prev;
         this.next = next;
@@ -45,7 +39,7 @@ public class ExtentDescriptor {
     }
 
     public static ExtentDescriptor deserialize(ByteBuffer buffer) {
-        byte extentNumber = buffer.get();
+        short extentNumber = buffer.getShort();
         Pointer prev = Pointer.deserialize(buffer);
         Pointer next = Pointer.deserialize(buffer);
         ExtentState state = ExtentState.fromCode(buffer.get());
@@ -55,29 +49,44 @@ public class ExtentDescriptor {
     }
 
     public void serialize(ByteBuffer buffer) {
-        buffer.put(extentNumber);
+        buffer.putShort(extentNumber);
         prev.serialize(buffer);
         next.serialize(buffer);
         buffer.put((byte) state.getCode());
         serializePageState(buffer);
     }
 
-    public void changeState(ExtentState newState) {
-        state = newState;
-    }
-
     public int allocatePage() {
         int freePageNumber = pageState.nextSetBit(0);
         pageState.clear(freePageNumber);
+
+        if (isFree()) {
+            state = ExtentState.FREE_FRAG;
+        }
+        if (isFullyAllocated()) {
+            state = ExtentState.FULL_FRAG;
+        }
+
         return freePageNumber;
     }
 
     public void deallocatePage(int pageIndex) {
         pageState.set(pageIndex, true);
+        
+        if (isFullFrag()) {
+            state = ExtentState.FREE_FRAG;
+        }
+        if (isFreeFrag() && isFullyFree()) {
+            state = ExtentState.FREE;
+        }
     }
 
     public boolean isFullyAllocated() {
         return pageState.isEmpty();
+    }
+
+    public boolean isFullyFree() {
+        return pageState.cardinality() == PAGES_PER_EXTENT;
     }
 
     public boolean isFree() {
@@ -113,7 +122,7 @@ public class ExtentDescriptor {
         next = pointer;
     }
 
-    public byte getExtentNumber() {
+    public short getExtentNumber() {
         return extentNumber;
     }
 

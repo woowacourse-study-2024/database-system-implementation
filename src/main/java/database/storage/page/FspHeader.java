@@ -5,7 +5,7 @@ import database.storage.page.fspheader.ExtentDescriptor;
 import database.storage.page.fspheader.ExtentState;
 import database.storage.page.fspheader.Pointer;
 import java.nio.ByteBuffer;
-import java.util.function.BiConsumer;
+import java.util.BitSet;
 
 /**
  * {@code FspHeader}는 {@code FileSpace}의 0번째 페이지로, 메타데이터와 {@code ExtentDescriptor} 엔트리들을 관리하는 역할을 한다.
@@ -26,13 +26,14 @@ import java.util.function.BiConsumer;
 public class FspHeader extends AbstractPage {
 
     public static final int ENTRIES_SIZE = Page.SIZE - (FileHeader.SIZE + 4 + 4 + BaseNode.SIZE * 3);
+    public static final int TOTAL_EXTENTS = 256;
 
     private final int spaceId;
     private int size;
 
-    private BaseNode freeFrag;
-    private BaseNode fullFrag;
-    private BaseNode free;
+    private final BaseNode freeFrag;
+    private final BaseNode fullFrag;
+    private final BaseNode free;
 
     private final byte[] entries;
 
@@ -52,6 +53,27 @@ public class FspHeader extends AbstractPage {
         this.fullFrag = fullFrag;
         this.free = free;
         this.entries = entries;
+    }
+
+    public static FspHeader createNew(int spaceId) {
+        FileHeader fileHeader = FileHeader.createNew(PageType.FSP_HEADER, 0);
+        int size = 0;
+
+        int lastEntryOffset = (TOTAL_EXTENTS - 1) * ExtentDescriptor.SIZE;
+        BaseNode freeFrag = new BaseNode((short) 0, Pointer.createNew(), Pointer.createNew());
+        BaseNode fullFrag = new BaseNode((short) 0, Pointer.createNew(), Pointer.createNew());
+        BaseNode free = new BaseNode((short) TOTAL_EXTENTS, new Pointer(0, 0), new Pointer(0, lastEntryOffset));
+
+        byte[] entries = new byte[ENTRIES_SIZE];
+        ByteBuffer buffer = ByteBuffer.wrap(entries);
+
+        for (int extentNumber = 0; extentNumber < TOTAL_EXTENTS; extentNumber++) {
+            ExtentDescriptor descriptor = getExtentDescriptor(extentNumber);
+            buffer.position(extentNumber * ExtentDescriptor.SIZE);
+            descriptor.serialize(buffer);
+        }
+
+        return new FspHeader(fileHeader, spaceId, size, freeFrag, fullFrag, free, entries);
     }
 
     public static FspHeader deserialize(ByteBuffer buffer) {
@@ -83,74 +105,140 @@ public class FspHeader extends AbstractPage {
 
     public int allocatePage() {
         if (!freeFrag.isEmpty()) {
-            return allocatePageFromList(freeFrag, this::moveExtentFromFreeFragToFullFrag);
+            return allocatePageFromFreeFrag();
         }
 
-        return allocatePageFromList(free, this::moveExtentFromFreeToFreeFrag);
-    }
-
-    private int allocatePageFromList(BaseNode list, BiConsumer<ExtentDescriptor, Pointer> move) {
-        Pointer currentPointer = list.getFirst();
-        ExtentDescriptor currentDescriptor = getDescriptor(currentPointer);
-
-        int pageIndex = currentDescriptor.allocatePage();
-        size++;
-
-        if (currentDescriptor.isFullyAllocated()) {
-            currentDescriptor.changeState(ExtentState.FULL_FRAG);
-        }
-        if (currentDescriptor.isFree()) {
-            currentDescriptor.changeState(ExtentState.FREE_FRAG);
-        }
-
-        move.accept(currentDescriptor, currentPointer);
-        return getGlobalPageNumber(currentDescriptor, pageIndex);
+        return allocatePageFromFree();
     }
 
     public void deallocatePage(int globalPageNumber) {
         int extentNumber = getExtentNumber(globalPageNumber);
         int pageIndex = getPageIndex(globalPageNumber);
 
-        int offset = extentNumber * ExtentDescriptor.SIZE;
+        Pointer pointer = getPointerForExtent(extentNumber);
+        ExtentDescriptor descriptor = readDescriptor(pointer);
 
-        Pointer currentPointer = getPointerForExtent(extentNumber);
-        ExtentDescriptor currentDescriptor = getDescriptor(currentPointer);
-
-        currentDescriptor.deallocatePage(pageIndex);
-        size--;
-
-        if (currentDescriptor.isFullFrag() && !currentDescriptor.isFullyAllocated()) {
-            currentDescriptor.changeState(ExtentState.FREE_FRAG);
-            moveExtentFromFullFragToFreeFrag(currentDescriptor, currentPointer);
-        }
-        if (currentDescriptor.isFreeFrag() && currentDescriptor.isFree()) {
-            currentDescriptor.changeState(ExtentState.FREE);
-            moveExtentFromFreeFragToFree(currentDescriptor, currentPointer);
+        if (descriptor.isFullFrag()) {
+            deallocateFromFullFrag(descriptor, pageIndex, pointer);
+        } else if (descriptor.isFreeFrag()) {
+            deallocateFromFreeFrag(descriptor, pageIndex, pointer);
         }
 
-        ByteBuffer outBuffer = ByteBuffer.wrap(entries);
-        outBuffer.position(offset);
-        currentDescriptor.serialize(outBuffer);
+        if (globalPageNumber == size) {
+            size--;
+        }
     }
 
-    private void moveExtentFromFreeFragToFullFrag(ExtentDescriptor currentDescriptor, Pointer currentPointer) {
-        freeFrag = removePointer(freeFrag, currentDescriptor, currentPointer);
-        fullFrag = addPointer(fullFrag, currentDescriptor, currentPointer);
+    private static ExtentDescriptor getExtentDescriptor(int extentNumber) {
+        Pointer prev = getPrevPointer(extentNumber);
+        Pointer next = getNextPointer(extentNumber);
+
+        BitSet pageState = new BitSet(ExtentDescriptor.PAGES_PER_EXTENT);
+        pageState.set(0, ExtentDescriptor.PAGES_PER_EXTENT);
+
+        return new ExtentDescriptor((short) extentNumber, prev, next, ExtentState.FREE, pageState);
     }
 
-    private void moveExtentFromFreeToFreeFrag(ExtentDescriptor currentDescriptor, Pointer currentPointer) {
-        free = removePointer(free, currentDescriptor, currentPointer);
-        freeFrag = addPointer(freeFrag, currentDescriptor, currentPointer);
+    private static Pointer getPrevPointer(int extentNumber) {
+        Pointer prev;
+        if (extentNumber == 0) {
+            prev = Pointer.createNew();
+        } else {
+            prev = new Pointer(0, (extentNumber - 1) * ExtentDescriptor.SIZE);
+        }
+        return prev;
     }
 
-    private void moveExtentFromFullFragToFreeFrag(ExtentDescriptor currentDescriptor, Pointer currentPointer) {
-        fullFrag = removePointer(fullFrag, currentDescriptor, currentPointer);
-        freeFrag = addPointer(freeFrag, currentDescriptor, currentPointer);
+    private static Pointer getNextPointer(int extentNumber) {
+        Pointer next;
+        if (extentNumber == TOTAL_EXTENTS - 1) {
+            next = Pointer.createNew();
+        } else {
+            next = new Pointer(0, (extentNumber + 1) * ExtentDescriptor.SIZE);
+        }
+        return next;
     }
 
-    private void moveExtentFromFreeFragToFree(ExtentDescriptor currentDescriptor, Pointer currentPointer) {
-        freeFrag = removePointer(freeFrag, currentDescriptor, currentPointer);
-        free = addPointer(free, currentDescriptor, currentPointer);
+    private int allocatePageFromFreeFrag() {
+        Pointer pointer = freeFrag.getFirst();
+        ExtentDescriptor descriptor = readDescriptor(pointer);
+
+        int pageIndex = descriptor.allocatePage();
+        size++;
+
+        if (descriptor.isFullyAllocated()) {
+            removeFirst(freeFrag, descriptor, pointer);
+            addLast(fullFrag, descriptor, pointer);
+        }
+        writeDescriptor(descriptor, pointer);
+
+        return getGlobalPageNumber(descriptor, pageIndex);
+    }
+
+    private int allocatePageFromFree() {
+        Pointer pointer = free.getFirst();
+        ExtentDescriptor descriptor = readDescriptor(pointer);
+
+        int pageIndex = descriptor.allocatePage();
+        size++;
+
+        removeFirst(free, descriptor, pointer);
+        addLast(freeFrag, descriptor, pointer);
+        writeDescriptor(descriptor, pointer);
+
+        return getGlobalPageNumber(descriptor, pageIndex);
+    }
+
+    private void deallocateFromFullFrag(ExtentDescriptor descriptor, int pageIndex, Pointer pointer) {
+        descriptor.deallocatePage(pageIndex);
+        removeFirst(fullFrag, descriptor, pointer);
+        addLast(freeFrag, descriptor, pointer);
+        writeDescriptor(descriptor, pointer);
+    }
+
+    private void deallocateFromFreeFrag(ExtentDescriptor descriptor, int pageIndex, Pointer pointer) {
+        descriptor.deallocatePage(pageIndex);
+
+        if (descriptor.isFullyFree()) {
+            removeFirst(freeFrag, descriptor, pointer);
+            addLast(free, descriptor, pointer);
+        }
+        writeDescriptor(descriptor, pointer);
+    }
+
+    private void removeFirst(BaseNode list, ExtentDescriptor currentDescriptor, Pointer currentPointer) {
+        if (list.isEmpty()) {
+            return;
+        }
+
+        Pointer nextPointer = currentDescriptor.getNext();
+        list.changeFirst(nextPointer);
+
+        if (!nextPointer.isEmpty()) {
+            ExtentDescriptor nextDescriptor = readDescriptor(currentDescriptor.getNext());
+            nextDescriptor.changePrev(Pointer.createNew());
+            writeDescriptor(nextDescriptor, nextPointer);
+        }
+
+        currentDescriptor.changePrev(Pointer.createNew());
+        currentDescriptor.changeNext(Pointer.createNew());
+        writeDescriptor(currentDescriptor, currentPointer);
+        list.decreaseLength();
+    }
+
+    private void addLast(BaseNode list, ExtentDescriptor currentDescriptor, Pointer currentPointer) {
+        Pointer lastPointer = list.getLast();
+
+        if (!lastPointer.isEmpty()) {
+            ExtentDescriptor lastDescriptor = readDescriptor(lastPointer);
+            lastDescriptor.changeNext(currentPointer);
+            writeDescriptor(lastDescriptor, lastPointer);
+        }
+
+        currentDescriptor.changePrev(lastPointer);
+        list.changeLast(currentPointer);
+        writeDescriptor(currentDescriptor, currentPointer);
+        list.increaseLength();
     }
 
     private Pointer getPointerForExtent(int extentNumber) {
@@ -158,54 +246,28 @@ public class FspHeader extends AbstractPage {
         return new Pointer(0, offset);
     }
 
-    private BaseNode removePointer(BaseNode list, ExtentDescriptor currentDescriptor, Pointer currentPointer) {
-        if (list.isEmpty()) {
-            return list;
-        }
-
-        currentDescriptor.changePrev(Pointer.createNew());
-        currentDescriptor.changeNext(Pointer.createNew());
-
-        if (list.getFirst().equals(currentPointer)) {
-            if (list.getLast().equals(currentPointer)) {
-                return BaseNode.createNew();
-            }
-
-            return new BaseNode(currentDescriptor.getNext(), list.getLast());
-        }
-
-        if (list.getLast().equals(currentPointer)) {
-            return new BaseNode(list.getFirst(), currentDescriptor.getPrev());
-        }
-
-        return list;
-    }
-
-    private BaseNode addPointer(BaseNode list, ExtentDescriptor currentDescriptor, Pointer currentPointer) {
-        if (list.isEmpty()) {
-            return new BaseNode(currentPointer, currentPointer);
-        }
-
-        currentDescriptor.changePrev(list.getLast());
-        return new BaseNode(list.getFirst(), currentPointer);
-    }
-
-    public ExtentDescriptor getDescriptor(Pointer pointer) {
+    private ExtentDescriptor readDescriptor(Pointer pointer) {
         ByteBuffer buffer = ByteBuffer.wrap(entries);
         buffer.position(pointer.getOffset());
         return ExtentDescriptor.deserialize(buffer);
     }
 
+    private void writeDescriptor(ExtentDescriptor descriptor, Pointer pointer) {
+        ByteBuffer buffer = ByteBuffer.wrap(entries);
+        buffer.position(pointer.getOffset());
+        descriptor.serialize(buffer);
+    }
+
     private int getGlobalPageNumber(ExtentDescriptor extent, int pageIndex) {
-        return extent.getExtentNumber() * ExtentDescriptor.PAGES_PER_EXTENT + pageIndex;
+        return extent.getExtentNumber() * ExtentDescriptor.PAGES_PER_EXTENT + pageIndex + 1;
     }
 
     private int getPageIndex(int globalPageNumber) {
-        return globalPageNumber % ExtentDescriptor.PAGES_PER_EXTENT;
+        return globalPageNumber % (ExtentDescriptor.PAGES_PER_EXTENT + 1);
     }
 
     private int getExtentNumber(int globalPageNumber) {
-        return globalPageNumber / ExtentDescriptor.PAGES_PER_EXTENT;
+        return globalPageNumber / (ExtentDescriptor.PAGES_PER_EXTENT + 1);
     }
 
     public int getSpaceId() {

@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
 import database.storage.page.fspheader.BaseNode;
+import database.storage.page.fspheader.ExtentDescriptor;
+import database.storage.page.fspheader.ExtentState;
 import database.storage.page.fspheader.Pointer;
 import java.nio.ByteBuffer;
 import org.junit.jupiter.api.DisplayName;
@@ -119,5 +121,239 @@ class FspHeaderTest {
                 () -> assertThat(deserialized.getEntries()[0]).isEqualTo((byte) 5),
                 () -> assertThat(deserialized.getEntries()[1]).isEqualTo((byte) 3)
         );
+    }
+
+    @DisplayName("FspHeader createNew(초기화) 테스트")
+    @Test
+    void testCreateNew() {
+        FspHeader fspHeader = FspHeader.createNew(1);
+
+        // 초기화 시 FreeExtent 만 존재
+        assertAll(
+                () -> assertThat(fspHeader.getFreeFrag().isEmpty()).isTrue(),
+                () -> assertThat(fspHeader.getFullFrag().isEmpty()).isTrue(),
+                () -> assertThat(fspHeader.getFree().isEmpty()).isFalse()
+        );
+
+        byte[] entries = fspHeader.getEntries();
+        ByteBuffer buffer = ByteBuffer.wrap(entries);
+
+        // FreeList의 첫 번째 ExtentDescriptor
+        Pointer freeFirst = fspHeader.getFree().getFirst();
+        ExtentDescriptor firstDescriptor = getExtentDescriptor(buffer, freeFirst.getOffset());
+
+        assertAll(
+                () -> assertThat(firstDescriptor.getExtentNumber()).isEqualTo((short) 0),
+                () -> assertThat(firstDescriptor.getState()).isEqualTo(ExtentState.FREE),
+                () -> assertThat(firstDescriptor.getPrev().isEmpty()).isTrue(),
+                () -> assertThat(firstDescriptor.getNext().isEmpty()).isFalse()
+        );
+
+        // FreeList의 마지막 ExtentDescriptor
+        int lastIndex = FspHeader.TOTAL_EXTENTS - 1;
+        Pointer freeLast = fspHeader.getFree().getLast();
+        ExtentDescriptor lastDescriptor = getExtentDescriptor(buffer, freeLast.getOffset());
+
+        assertAll(
+                () -> assertThat(lastDescriptor.getExtentNumber()).isEqualTo((short) 255),
+                () -> assertThat(lastDescriptor.getState()).isEqualTo(ExtentState.FREE),
+                () -> assertThat(lastDescriptor.getPrev().isEmpty()).isFalse(),
+                () -> assertThat(lastDescriptor.getNext().isEmpty()).isTrue()
+        );
+
+        // FreeList의 중간 ExtentDescriptor
+        for (int extentNumber = 1; extentNumber < lastIndex; extentNumber++) {
+
+            int currentOffset = extentNumber * ExtentDescriptor.SIZE;
+            ExtentDescriptor currentDescriptor = getExtentDescriptor(buffer, currentOffset);
+
+            Pointer prevPointer = currentDescriptor.getPrev();
+            Pointer nextPointer = currentDescriptor.getNext();
+
+            ExtentDescriptor prevDescriptor = getExtentDescriptor(buffer, prevPointer.getOffset());
+            Pointer prevNext = prevDescriptor.getNext();
+
+            ExtentDescriptor nextDescriptor = getExtentDescriptor(buffer, nextPointer.getOffset());
+            Pointer nextPrev = nextDescriptor.getPrev();
+
+            assertAll(
+                    () -> assertThat(prevPointer.isEmpty()).isFalse(),
+                    () -> assertThat(prevNext.getOffset()).isEqualTo(currentOffset),
+                    () -> assertThat(nextPointer.isEmpty()).isFalse(),
+                    () -> assertThat(nextPrev.getOffset()).isEqualTo(currentOffset)
+            );
+        }
+    }
+
+    @DisplayName("allocatePage 시나리오 테스트")
+    @Test
+    void testAllocatePage() {
+        // 파일 스페이스 헤더 생성
+        FspHeader fspHeader = FspHeader.createNew(1);
+
+        BaseNode fullFrag = fspHeader.getFullFrag();
+        BaseNode freeFrag = fspHeader.getFreeFrag();
+        BaseNode free = fspHeader.getFree();
+
+        // 첫 번째 할당: free 리스트에 있는 첫 번째 Extent에서 페이지를 할당, ExtentDescriptor는 freeFrag 리스트로 이동
+        // fullFrag: empty
+        // freeFrag: [xdes0](first)(last)
+        // free: [xdes1](first) <-> [xdes2] <->...<->[xdes255](last)
+        int globalPageNumber = fspHeader.allocatePage();
+        assertAll(
+                () -> assertThat(fullFrag.getLength()).isEqualTo((short) 0),
+                () -> assertThat(freeFrag.getLength()).isEqualTo((short) 1),
+                () -> assertThat(free.getLength()).isEqualTo((short) 255),
+                () -> assertThat(globalPageNumber).isEqualTo(1),
+                () -> assertThat(fspHeader.getSize()).isEqualTo(1),
+                () -> assertThat(fspHeader.getFreeFrag().isEmpty()).isFalse(),
+                () -> assertThat(fspHeader.getFullFrag().isEmpty()).isTrue(),
+                () -> assertThat(fspHeader.getFree().isEmpty()).isFalse()
+        );
+
+        // ExtentDescriptor 엔트리 영역에서 주소상 첫 번째 Extent가 업데이트 되었는지 테스트
+        // 페이지 할당 후 주소상 첫 번째 Extent는 FREE_FRAG로 업데이트, prev와 next 포인터도 빈 포인터를 할당
+        ByteBuffer buffer = ByteBuffer.wrap(fspHeader.getEntries());
+        ExtentDescriptor first = getExtentDescriptor(buffer, 0);
+        assertAll(
+                () -> assertThat(first.getState()).isEqualTo(ExtentState.FREE_FRAG),
+                () -> assertThat(first.getPageState().cardinality()).isEqualTo(ExtentDescriptor.PAGES_PER_EXTENT - 1),
+                () -> assertThat(first.getPrev().isEmpty()).isTrue(),
+                () -> assertThat(first.getNext().isEmpty()).isTrue()
+        );
+
+        // freeFrag 리스트가 업데이트 되었는지 테스트
+        // freeFrag 리스트의 첫 Extent가 존재해야 한다.
+        ExtentDescriptor freeFragFirst = getExtentDescriptor(buffer, freeFrag.getFirst().getOffset());
+        assertAll(
+                () -> assertThat(freeFragFirst.getState()).isEqualTo(ExtentState.FREE_FRAG),
+                () -> assertThat(freeFragFirst.getPageState().cardinality())
+                        .isEqualTo(ExtentDescriptor.PAGES_PER_EXTENT - 1),
+                () -> assertThat(freeFragFirst.getPrev().isEmpty()).isTrue(),
+                () -> assertThat(freeFragFirst.getNext().isEmpty()).isTrue()
+        );
+
+        // free 리스트가 업데이트 되었는지 테스트
+        // 페이지 할당 후 free 리스트의 첫 번째 Extent는 주소상 두 번째 Extent이어야 한다.
+        ExtentDescriptor second = getExtentDescriptor(buffer, ExtentDescriptor.SIZE);
+        assertAll(
+                () -> assertThat(second.getState()).isEqualTo(ExtentState.FREE),
+                () -> assertThat(second.getPrev().isEmpty()).isTrue(),
+                () -> assertThat(second.getNext().isEmpty()).isFalse()
+        );
+
+        // 두 번째 할당: freeFrag 리스트가 비어있지 않으므로 freeFrag 첫 번째 Extent에 페이지를 할당
+        // freeFrag Extent에 아직 빈 페이지 슬롯이 있으므로 FullFrag 상태로 업데이트되지 않는다.
+        int globalPageNumber2 = fspHeader.allocatePage();
+        assertAll(
+                () -> assertThat(globalPageNumber2).isEqualTo(2),
+                () -> assertThat(fspHeader.getSize()).isEqualTo(2),
+                () -> assertThat(fspHeader.getFreeFrag().isEmpty()).isFalse(),
+                () -> assertThat(fspHeader.getFullFrag().isEmpty()).isTrue(),
+                () -> assertThat(fspHeader.getFree().isEmpty()).isFalse()
+        );
+
+        // freeFrag Extent에 나머지 페이지를 모두 할당
+        for (int i = 2; i < ExtentDescriptor.PAGES_PER_EXTENT; i++) {
+            fspHeader.allocatePage();
+        }
+
+        // 이제 주소상 첫 번째 Extent는 페이지가 모두 할당된 상태여야 한다.
+        // freeFrag 리스트는 비어있게 되고, Extent는 fullFrag 리스트로 이동한다.
+        assertAll(
+                () -> assertThat(fullFrag.getLength()).isEqualTo((short) 1),
+                () -> assertThat(freeFrag.getLength()).isEqualTo((short) 0),
+                () -> assertThat(free.getLength()).isEqualTo((short) 255),
+                () -> assertThat(freeFrag.getFirst().isEmpty()).isTrue(),
+                () -> assertThat(fullFrag.getFirst().isEmpty()).isFalse()
+        );
+
+        // fullFrag 리스트의 Extent는 여유 페이지가 존재하지 않는다.
+        ExtentDescriptor fullFragFirst = getExtentDescriptor(buffer, fullFrag.getFirst().getOffset());
+        assertAll(
+                () -> assertThat(fullFragFirst.getState()).isEqualTo(ExtentState.FULL_FRAG),
+                () -> assertThat(fullFragFirst.getPageState().isEmpty()).isTrue()
+        );
+
+        // 추가로 새로운 페이지를 할당하면 free 리스트 Extent에서 페이지를 할당한다.
+        fspHeader.allocatePage();
+        assertAll(
+                () -> assertThat(fullFrag.getLength()).isEqualTo((short) 1),
+                () -> assertThat(freeFrag.getLength()).isEqualTo((short) 1),
+                () -> assertThat(free.getLength()).isEqualTo((short) 254)
+        );
+    }
+
+    @DisplayName("deallocatePage 시나리오 테스트")
+    @Test
+    void testDeallocatePage() {
+        // 테스트를 위한 데이터 생성
+        FspHeader fspHeader = FspHeader.createNew(2);
+        for (int i = 0; i < ExtentDescriptor.PAGES_PER_EXTENT; i++) {
+            fspHeader.allocatePage();
+        }
+
+        // 65번째 페이지 할당 후 상태
+        // fullFrag: [xdes0] (pageNum: 1~64) Extent 0은 모든 페이지를 할당하여 Full
+        // freeFrag: [xdes1] (pageNum: 65~128) Extent 1은 페이지 1개를 할당하여 FreeFrag
+        // free: [xdes2] <->...<->[xdes255]
+        int newPageNumber = fspHeader.allocatePage();
+
+        BaseNode freeFrag = fspHeader.getFreeFrag();
+        BaseNode fullFrag = fspHeader.getFullFrag();
+        BaseNode free = fspHeader.getFree();
+
+        assertAll(
+                () -> assertThat(fullFrag.getLength()).isEqualTo((short) 1),
+                () -> assertThat(freeFrag.getLength()).isEqualTo((short) 1),
+                () -> assertThat(free.getLength()).isEqualTo((short) 254),
+                () -> assertThat(newPageNumber).isEqualTo(65),
+                () -> assertThat(freeFrag.isEmpty()).isFalse(),
+                () -> assertThat(fullFrag.isEmpty()).isFalse(),
+                () -> assertThat(free.isEmpty()).isFalse()
+        );
+
+        // 1번 페이지 해제: Extent 0은 상태가 FreeFrag로 업데이트되며 freeFrag 리스트 마지막으로 이동
+        ByteBuffer buffer = ByteBuffer.wrap(fspHeader.getEntries());
+        fspHeader.deallocatePage(1);
+
+        assertAll(
+                () -> assertThat(fullFrag.getLength()).isEqualTo((short) 0),
+                () -> assertThat(freeFrag.getLength()).isEqualTo((short) 2),
+                () -> assertThat(free.getLength()).isEqualTo((short) 254),
+                () -> assertThat(freeFrag.isEmpty()).isFalse(),
+                () -> assertThat(fullFrag.isEmpty()).isTrue(),
+                () -> assertThat(free.isEmpty()).isFalse()
+        );
+
+        ExtentDescriptor freeFragLast = getExtentDescriptor(buffer, freeFrag.getLast().getOffset());
+        ExtentDescriptor freeFragFirst = getExtentDescriptor(buffer, freeFrag.getFirst().getOffset());
+
+        assertAll(
+                () -> assertThat(freeFragLast.getState()).isEqualTo(ExtentState.FREE_FRAG),
+                () -> assertThat(freeFragLast.getPageState().isEmpty()).isFalse(),
+                () -> assertThat(freeFragLast.getPageState().cardinality()).isEqualTo(1),
+                () -> assertThat(freeFragLast.getPrev().getOffset()).isEqualTo(freeFrag.getFirst().getOffset()),
+                () -> assertThat(freeFragFirst.getNext().getOffset()).isEqualTo(freeFrag.getLast().getOffset()),
+                () -> assertThat(freeFrag.getFirst().getOffset()).isEqualTo(ExtentDescriptor.SIZE),
+                () -> assertThat(freeFrag.getLast().getOffset()).isEqualTo(0)
+        );
+
+        // 64번 페이지 해제: Extent 1은 상태가 Free로 업데이트되며 free 리스트 마지막으로 이동
+        fspHeader.deallocatePage(65);
+
+        assertAll(
+                () -> assertThat(fullFrag.getLength()).isEqualTo((short) 0),
+                () -> assertThat(freeFrag.getLength()).isEqualTo((short) 1),
+                () -> assertThat(free.getLength()).isEqualTo((short) 255),
+                () -> assertThat(freeFrag.getFirst().getOffset()).isEqualTo(0),
+                () -> assertThat(freeFrag.getLast().getOffset()).isEqualTo(0),
+                () -> assertThat(free.getLast().getOffset()).isEqualTo(ExtentDescriptor.SIZE)
+        );
+    }
+
+    private ExtentDescriptor getExtentDescriptor(ByteBuffer buffer, int currentOffset) {
+        buffer.position(currentOffset);
+        return ExtentDescriptor.deserialize(buffer);
     }
 }
