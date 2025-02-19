@@ -39,7 +39,21 @@ public class TableSpace {
         bufferPool.putPage(new PageId(fileName, pageNumber), page);
     }
 
-    public void insertRecord(int rootPageNumber, Record record) {
+    public void insertRecords(int rootPageNumber, Record record) {
+        // 인덱스 트리 루트 페이지 조회
 
+        // 인덱스 트리에 레코드 삽입
+    }
+
+    public void deleteRecords(int rootPageNumber, Condition condition) {
+        // 인덱스 트리 루트 페이지 조회
+
+        // 조건절에 따라 인덱스 트리에서 레코드를 삭제
+    }
+
+    public <T> RecordSet<T> selectRecords(int rootPageNumber, Condition condition) {
+        // 인덱스 트리 루트 페이지 조회
+
+        // 조건절에 따라 인덱스 트리에서 레코드를 조회
     }
 }

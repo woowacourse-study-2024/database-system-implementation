@@ -13,11 +13,28 @@ public class StorageEngine {
         this.dataDictionary = dataDictionary;
     }
 
-    public void insertRecord(String tableName, Record record) {
+    public void insertRecords(String tableName, Record record) {
         Metadata metadata = dataDictionary.getMetadata(tableName);
         int rootPageNumber = metadata.getClusteredIndex().getRootPageNumber();
 
         TableSpace table = new TableSpace(tableName, bufferPool);
-        table.insertRecord(rootPageNumber, record);
+        table.insertRecords(rootPageNumber, record);
+    }
+
+    public <T> RecordSet<T> selectRecords(String tableName, Condition condition) {
+        Metadata metadata = dataDictionary.getMetadata(tableName);
+        int rootPageNumber = metadata.getClusteredIndex().getRootPageNumber();
+
+        TableSpace table = new TableSpace(tableName, bufferPool);
+        return table.selectRecords(rootPageNumber, condition);
+    }
+
+    // Undo Log 및 MVCC 미구현
+    public void deleteRecords(String tableName, Condition condition) {
+        Metadata metadata = dataDictionary.getMetadata(tableName);
+        int rootPageNumber = metadata.getClusteredIndex().getRootPageNumber();
+
+        TableSpace table = new TableSpace(tableName, bufferPool);
+        table.deleteRecords(rootPageNumber, condition);
     }
 }
