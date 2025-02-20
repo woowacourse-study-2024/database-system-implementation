@@ -24,6 +24,10 @@ public class ExtentDescriptor {
     public static final int PAGES_PER_EXTENT = 64;
     public static final int BITMAP_BYTE_SIZE = 8;
 
+    private static final int FIRST_EXTENT = 1;
+    private static final int SECOND_EXTENT = 2;
+    public static final int TOTAL_EXTENTS = 256;
+
     private final short extentNumber;
     private Pointer prev;
     private Pointer next;
@@ -36,6 +40,16 @@ public class ExtentDescriptor {
         this.next = next;
         this.state = state;
         this.pageState = pageState;
+    }
+
+    public static ExtentDescriptor createNew(int extentNumber, ExtentState state) {
+        Pointer prev = getPrevPointer(extentNumber);
+        Pointer next = getNextPointer(extentNumber);
+
+        BitSet pageState = new BitSet(ExtentDescriptor.PAGES_PER_EXTENT);
+        pageState.set(0, ExtentDescriptor.PAGES_PER_EXTENT);
+
+        return new ExtentDescriptor((short) extentNumber, prev, next, state, pageState);
     }
 
     public static ExtentDescriptor deserialize(ByteBuffer buffer) {
@@ -72,7 +86,7 @@ public class ExtentDescriptor {
 
     public void deallocatePage(int pageIndex) {
         pageState.set(pageIndex, true);
-        
+
         if (isFullFrag()) {
             state = ExtentState.FREE_FRAG;
         }
@@ -99,6 +113,26 @@ public class ExtentDescriptor {
 
     public boolean isFullFrag() {
         return state == ExtentState.FULL_FRAG;
+    }
+
+    private static Pointer getPrevPointer(int extentNumber) {
+        Pointer prev;
+        if (extentNumber == FIRST_EXTENT || extentNumber == SECOND_EXTENT) {
+            prev = Pointer.createNew();
+        } else {
+            prev = new Pointer(0, (extentNumber - 2) * ExtentDescriptor.SIZE);
+        }
+        return prev;
+    }
+
+    private static Pointer getNextPointer(int extentNumber) {
+        Pointer next;
+        if (extentNumber == FIRST_EXTENT || extentNumber == TOTAL_EXTENTS) {
+            next = Pointer.createNew();
+        } else {
+            next = new Pointer(0, extentNumber * ExtentDescriptor.SIZE);
+        }
+        return next;
     }
 
     private static BitSet deserializePageState(ByteBuffer buffer) {
