@@ -34,26 +34,30 @@ class MetadataTest {
 
         // then
         assertAll(
-                () -> assertThat(buffer.getLong()).isEqualTo(metadata.getTableId()),
-                () -> assertThat(ByteBufferUtils.readString(buffer)).isEqualTo(metadata.getTableName()),
+                () -> assertThat(buffer.getLong()).as("tableId").isEqualTo(metadata.getTableId()),
+                () -> assertThat(ByteBufferUtils.readString(buffer)).as("tableName").isEqualTo(metadata.getTableName()),
 
-                () -> assertThat(buffer.get()).isEqualTo(metadata.getColumnCount()),
-                () -> assertThat(ByteBufferUtils.readString(buffer)).isEqualTo("id"),
-                () -> assertThat(DataType.fromCode(buffer.get())).isEqualTo(DataType.INT),
-                () -> assertThat(buffer.get()).isEqualTo((byte) 0),
-                () -> assertThat(buffer.getShort()).isEqualTo((short) 11),
-                () -> assertThat(ByteBufferUtils.readString(buffer)).isEqualTo("name"),
-                () -> assertThat(DataType.fromCode(buffer.get())).isEqualTo(DataType.CHAR),
-                () -> assertThat(buffer.get()).isEqualTo((byte) 0),
-                () -> assertThat(buffer.getShort()).isEqualTo((short) 10),
+                () -> assertThat(buffer.get()).as("columnCount").isEqualTo(metadata.getColumnCount()),
 
-                () -> assertThat(buffer.get()).isEqualTo(metadata.getIndexCount()),
-                () -> assertThat(ByteBufferUtils.readString(buffer)).isEqualTo("idx_clustered"),
-                () -> assertThat(buffer.get()).isEqualTo((byte) 0),
-                () -> assertThat(buffer.getInt()).isEqualTo(6),
-                () -> assertThat(ByteBufferUtils.readString(buffer)).isEqualTo("idx_members_name"),
-                () -> assertThat(buffer.get()).isEqualTo((byte) 1),
-                () -> assertThat(buffer.getInt()).isEqualTo(23)
+                () -> assertThat(ByteBufferUtils.readString(buffer)).as("column1 name").isEqualTo("id"),
+                () -> assertThat(buffer.get()).as("column1 typeCode").isEqualTo((byte) 0),
+                () -> assertThat(buffer.get()).as("column1 nullable").isEqualTo((byte) 0),
+                () -> assertThat(buffer.getShort()).as("column1 length").isEqualTo((short) 11),
+
+                () -> assertThat(ByteBufferUtils.readString(buffer)).as("column2 name").isEqualTo("name"),
+                () -> assertThat(buffer.get()).as("column2 typeCode").isEqualTo((byte) 1),
+                () -> assertThat(buffer.get()).as("column2 nullable").isEqualTo((byte) 0),
+                () -> assertThat(buffer.getShort()).as("column2 length").isEqualTo((short) 10),
+
+                () -> assertThat(buffer.get()).as("indexCount").isEqualTo(metadata.getIndexCount()),
+
+                () -> assertThat(ByteBufferUtils.readString(buffer)).as("index1 name").isEqualTo("idx_clustered"),
+                () -> assertThat(buffer.get()).as("index1 typeCode").isEqualTo((byte) 0),
+                () -> assertThat(buffer.getInt()).as("index1 rootPageNumber").isEqualTo(6),
+
+                () -> assertThat(ByteBufferUtils.readString(buffer)).as("index2 name").isEqualTo("idx_members_name"),
+                () -> assertThat(buffer.get()).as("index2 typeCode").isEqualTo((byte) 1),
+                () -> assertThat(buffer.getInt()).as("index2 rootPageNumber").isEqualTo(23)
         );
     }
 
@@ -68,7 +72,7 @@ class MetadataTest {
 
         Indexes indexes = new Indexes(List.of(
                 new Index("idx_clustered", IndexType.CLUSTERED, 6),
-                new Index("idx_members_name", IndexType.SECONDARY, 23)
+                new Index("idx_name", IndexType.SECONDARY, 23)
         ));
 
         Metadata original = new Metadata(1, "members", (byte) 2, columns, (byte) 2, indexes);
@@ -81,34 +85,36 @@ class MetadataTest {
         Metadata deserialized = Metadata.deserialize(buffer);
 
         // then
-        List<Column> deColumns = deserialized.getColumns().getColumns();
-        Column first = deColumns.get(0);
-        Column second = deColumns.get(1);
-
-        Index clustered = deserialized.getClusteredIndex();
-        Index secondary = deserialized.getIndex("idx_members_name");
-
         assertAll(
-                () -> assertThat(deserialized.getTableId()).isEqualTo(original.getTableId()),
-                () -> assertThat(deserialized.getTableName()).isEqualTo(original.getTableName()),
+                () -> assertThat(deserialized.getTableId()).as("tableId").isEqualTo(original.getTableId()),
+                () -> assertThat(deserialized.getTableName()).as("tableName").isEqualTo(original.getTableName()),
 
-                () -> assertThat(deserialized.getColumnCount()).isEqualTo(original.getColumnCount()),
-                () -> assertThat(first.getName()).isEqualTo("id"),
-                () -> assertThat(first.getType()).isEqualTo(DataType.INT),
-                () -> assertThat(first.isNullable()).isEqualTo(false),
-                () -> assertThat(first.getLength()).isEqualTo((short) 11),
-                () -> assertThat(second.getName()).isEqualTo("name"),
-                () -> assertThat(second.getType()).isEqualTo(DataType.CHAR),
-                () -> assertThat(second.isNullable()).isEqualTo(false),
-                () -> assertThat(second.getLength()).isEqualTo((short) 10),
+                () -> assertThat(deserialized.getColumnCount()).as("columnCount").isEqualTo(original.getColumnCount()),
+                () -> assertColumnEquals(original.getColumn("id"), deserialized.getColumn("id")),
+                () -> assertColumnEquals(original.getColumn("name"), deserialized.getColumn("name")),
 
-                () -> assertThat(deserialized.getIndexCount()).isEqualTo(original.getIndexCount()),
-                () -> assertThat(clustered.getName()).isEqualTo("idx_clustered"),
-                () -> assertThat(clustered.getType()).isEqualTo(IndexType.CLUSTERED),
-                () -> assertThat(clustered.getRootPageNumber()).isEqualTo(6),
-                () -> assertThat(secondary.getName()).isEqualTo("idx_members_name"),
-                () -> assertThat(secondary.getType()).isEqualTo(IndexType.SECONDARY),
-                () -> assertThat(secondary.getRootPageNumber()).isEqualTo(23)
+                () -> assertThat(deserialized.getIndexCount()).as("indexCount").isEqualTo(original.getIndexCount()),
+                () -> assertIndexEquals(original.getIndex("idx_clustered"), deserialized.getIndex("idx_clustered")),
+                () -> assertIndexEquals(original.getIndex("idx_name"), deserialized.getIndex("idx_name"))
+        );
+    }
+
+    private void assertColumnEquals(Column expected, Column actual) {
+        assertAll(
+                () -> assertThat(actual.getName()).as("name").isEqualTo(expected.getName()),
+                () -> assertThat(actual.getType()).as("type").isEqualTo(expected.getType()),
+                () -> assertThat(actual.isNullable()).as("nullable").isEqualTo(expected.isNullable()),
+                () -> assertThat(actual.getLength()).as("length").isEqualTo(expected.getLength())
+        );
+    }
+
+    private void assertIndexEquals(Index expected, Index actual) {
+        assertAll(
+                () -> assertThat(actual.getName()).as("name").isEqualTo(expected.getName()),
+                () -> assertThat(actual.getType()).as("type").isEqualTo(expected.getType()),
+                () -> assertThat(actual.getRootPageNumber())
+                        .as("rootPageNumber")
+                        .isEqualTo(expected.getRootPageNumber())
         );
     }
 }

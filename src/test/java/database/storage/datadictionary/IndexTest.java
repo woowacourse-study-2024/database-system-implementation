@@ -23,9 +23,9 @@ class IndexTest {
 
         // then
         assertAll(
-                () -> assertThat(ByteBufferUtils.readString(buffer)).isEqualTo(index.getName()),
-                () -> assertThat(buffer.get()).isEqualTo((byte) 1),
-                () -> assertThat(buffer.getInt()).isEqualTo(index.getRootPageNumber())
+                () -> assertThat(ByteBufferUtils.readString(buffer)).as("name").isEqualTo(index.getName()),
+                () -> assertThat(buffer.get()).as("typeCode").isEqualTo((byte) 1),
+                () -> assertThat(buffer.getInt()).as("rootPageNumber").isEqualTo(index.getRootPageNumber())
         );
     }
 

@@ -3,6 +3,7 @@ package database.storage.datadictionary;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 public class Columns {
 
@@ -30,6 +31,13 @@ public class Columns {
         return columns.stream()
                 .mapToInt(Column::getByteSize)
                 .sum();
+    }
+
+    public Column getColumn(String columnName) {
+        return columns.stream()
+                .filter(column -> column.hasName(columnName))
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException("Column not found: " + columnName));
     }
 
     public List<Column> getColumns() {

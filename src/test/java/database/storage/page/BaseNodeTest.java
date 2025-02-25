@@ -20,8 +20,7 @@ class BaseNodeTest {
 
         BaseNode baseNode = new BaseNode((short) 0, first, last);
 
-        int capacity = BaseNode.SIZE;
-        ByteBuffer buffer = ByteBuffer.allocate(capacity);
+        ByteBuffer buffer = ByteBuffer.allocate(BaseNode.SIZE);
 
         // when
         baseNode.serialize(buffer);
@@ -29,11 +28,11 @@ class BaseNodeTest {
 
         // then
         assertAll(
-                () -> assertThat(buffer.getShort()).isEqualTo((short) 0),
-                () -> assertThat(buffer.getInt()).isEqualTo(0),
-                () -> assertThat(buffer.getInt()).isEqualTo(100),
-                () -> assertThat(buffer.getInt()).isEqualTo(0),
-                () -> assertThat(buffer.getInt()).isEqualTo(600)
+                () -> assertThat(buffer.getShort()).as("Length").isEqualTo((short) 0),
+                () -> assertThat(buffer.getInt()).as("FirstPointer pageNumber").isEqualTo(0),
+                () -> assertThat(buffer.getInt()).as("FirstPointer offset").isEqualTo(100),
+                () -> assertThat(buffer.getInt()).as("LastPointer pageNumber").isEqualTo(0),
+                () -> assertThat(buffer.getInt()).as("LastPointer offset").isEqualTo(600)
         );
     }
 
@@ -46,8 +45,7 @@ class BaseNodeTest {
 
         BaseNode original = new BaseNode((short) 0, first, last);
 
-        int capacity = BaseNode.SIZE;
-        ByteBuffer buffer = ByteBuffer.allocate(capacity);
+        ByteBuffer buffer = ByteBuffer.allocate(BaseNode.SIZE);
         original.serialize(buffer);
         buffer.flip();
 
@@ -56,17 +54,17 @@ class BaseNodeTest {
 
         // then
         assertAll(
-                () -> assertThat(deserialized.getLength()).isEqualTo(original.getLength()),
+                () -> assertThat(deserialized.getLength()).as("Length").isEqualTo(original.getLength()),
+                () -> assertPointersEqual("FirstPointer", first, deserialized.getFirst()),
+                () -> assertPointersEqual("LastPointer", last, deserialized.getLast())
+        );
+    }
 
-                () -> assertThat(deserialized.getFirst().getPageNumber())
-                        .isEqualTo(original.getFirst().getPageNumber()),
-                () -> assertThat(deserialized.getFirst().getOffset())
-                        .isEqualTo(original.getFirst().getOffset()),
-
-                () -> assertThat(deserialized.getLast().getPageNumber())
-                        .isEqualTo(original.getLast().getPageNumber()),
-                () -> assertThat(deserialized.getLast().getOffset())
-                        .isEqualTo(original.getLast().getOffset())
+    private void assertPointersEqual(String pointerName, Pointer expected, Pointer actual) {
+        assertAll(
+                () -> assertThat(actual.getPageNumber()).as(pointerName + " pageNumber")
+                        .isEqualTo(expected.getPageNumber()),
+                () -> assertThat(actual.getOffset()).as(pointerName + " offset").isEqualTo(expected.getOffset())
         );
     }
 }

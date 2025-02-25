@@ -24,10 +24,10 @@ class ColumnTest {
 
         // then
         assertAll(
-                () -> assertThat(ByteBufferUtils.readString(buffer)).isEqualTo(column.getName()),
-                () -> assertThat(DataType.fromCode(buffer.get())).isEqualTo(column.getType()),
-                () -> assertThat(buffer.get()).isEqualTo((byte) 0),
-                () -> assertThat(buffer.getShort()).isEqualTo(column.getLength())
+                () -> assertThat(ByteBufferUtils.readString(buffer)).as("name").isEqualTo(column.getName()),
+                () -> assertThat(buffer.get()).as("typeCode").isEqualTo((byte) column.getType().getCode()),
+                () -> assertThat(buffer.get()).as("nullable").isEqualTo((byte) 0),
+                () -> assertThat(buffer.getShort()).as("length").isEqualTo(column.getLength())
         );
     }
 

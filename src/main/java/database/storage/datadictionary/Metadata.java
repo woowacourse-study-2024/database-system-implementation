@@ -58,6 +58,10 @@ public class Metadata {
         return indexes.getIndex(indexName);
     }
 
+    public Column getColumn(String columnName) {
+        return columns.getColumn(columnName);
+    }
+
     public int getByteSize() {
         return 8 + (1 + tableName.length()) + (1 + columns.getByteSize()) + (1 + indexes.getByteSize());
     }

@@ -27,8 +27,7 @@ class FspHeaderTest {
 
         FspHeader header = new FspHeader(fileHeader, 1, 0, freeFrag, fullFrag, free, entries);
 
-        int capacity = Page.SIZE;
-        ByteBuffer buffer = ByteBuffer.allocate(capacity);
+        ByteBuffer buffer = ByteBuffer.allocate(Page.SIZE);
 
         // when
         header.serialize(buffer);
@@ -36,31 +35,31 @@ class FspHeaderTest {
 
         // then
         assertAll(
-                () -> assertThat(buffer.get()).isEqualTo((byte) 1),
-                () -> assertThat(buffer.getInt()).isEqualTo(0),
-                () -> assertThat(buffer.getInt()).isEqualTo(-1),
-                () -> assertThat(buffer.getInt()).isEqualTo(1),
+                () -> assertThat(buffer.get()).as("FileHeader pageType code").isEqualTo((byte) 1),
+                () -> assertThat(buffer.getInt()).as("FileHeader pageNumber").isEqualTo(0),
+                () -> assertThat(buffer.getInt()).as("FileHeader prevPageNumber").isEqualTo(-1),
+                () -> assertThat(buffer.getInt()).as("FileHeader nextPageNumber").isEqualTo(1),
 
-                () -> assertThat(buffer.getInt()).isEqualTo(1),
-                () -> assertThat(buffer.getInt()).isEqualTo(0),
+                () -> assertThat(buffer.getInt()).as("spaceId").isEqualTo(1),
+                () -> assertThat(buffer.getInt()).as("size").isEqualTo(0),
 
-                () -> assertThat(buffer.getShort()).isEqualTo((short) 0),
-                () -> assertThat(buffer.getInt()).isEqualTo(0),
-                () -> assertThat(buffer.getInt()).isEqualTo(200),
-                () -> assertThat(buffer.getInt()).isEqualTo(0),
-                () -> assertThat(buffer.getInt()).isEqualTo(200),
+                () -> assertThat(buffer.getShort()).as("FreeFrag length").isEqualTo((short) 0),
+                () -> assertThat(buffer.getInt()).as("FreeFrag firstPointer pageNumber").isEqualTo(0),
+                () -> assertThat(buffer.getInt()).as("FreeFrag firstPointer offset").isEqualTo(200),
+                () -> assertThat(buffer.getInt()).as("FreeFrag lastPointer pageNumber").isEqualTo(0),
+                () -> assertThat(buffer.getInt()).as("FreeFrag lastPointer offset").isEqualTo(200),
 
-                () -> assertThat(buffer.getShort()).isEqualTo((short) 0),
-                () -> assertThat(buffer.getInt()).isEqualTo(0),
-                () -> assertThat(buffer.getInt()).isEqualTo(400),
-                () -> assertThat(buffer.getInt()).isEqualTo(0),
-                () -> assertThat(buffer.getInt()).isEqualTo(600),
+                () -> assertThat(buffer.getShort()).as("FullFrag length").isEqualTo((short) 0),
+                () -> assertThat(buffer.getInt()).as("FullFrag firstPointer pageNumber").isEqualTo(0),
+                () -> assertThat(buffer.getInt()).as("FullFrag firstPointer offset").isEqualTo(400),
+                () -> assertThat(buffer.getInt()).as("FullFrag lastPointer pageNumber").isEqualTo(0),
+                () -> assertThat(buffer.getInt()).as("FullFrag lastPointer offset").isEqualTo(600),
 
-                () -> assertThat(buffer.getShort()).isEqualTo((short) 0),
-                () -> assertThat(buffer.getInt()).isEqualTo(0),
-                () -> assertThat(buffer.getInt()).isEqualTo(300),
-                () -> assertThat(buffer.getInt()).isEqualTo(0),
-                () -> assertThat(buffer.getInt()).isEqualTo(300),
+                () -> assertThat(buffer.getShort()).as("Free length").isEqualTo((short) 0),
+                () -> assertThat(buffer.getInt()).as("Free firstPointer pageNumber").isEqualTo(0),
+                () -> assertThat(buffer.getInt()).as("Free firstPointer offset").isEqualTo(300),
+                () -> assertThat(buffer.getInt()).as("Free lastPointer pageNumber").isEqualTo(0),
+                () -> assertThat(buffer.getInt()).as("Free lastPointer offset").isEqualTo(300),
 
                 () -> assertThat(buffer.get()).isEqualTo((byte) 5),
                 () -> assertThat(buffer.get()).isEqualTo((byte) 3)
@@ -81,8 +80,7 @@ class FspHeaderTest {
 
         FspHeader original = new FspHeader(fileHeader, 1, 0, freeFrag, fullFrag, free, entries);
 
-        int capacity = Page.SIZE;
-        ByteBuffer buffer = ByteBuffer.allocate(capacity);
+        ByteBuffer buffer = ByteBuffer.allocate(Page.SIZE);
         original.serialize(buffer);
         buffer.flip();
 
@@ -91,33 +89,12 @@ class FspHeaderTest {
 
         // then
         assertAll(
-                () -> assertThat(deserialized.getFileHeader().getPageType())
-                        .isEqualTo(original.getFileHeader().getPageType()),
-                () -> assertThat(deserialized.getFileHeader().getPageNumber())
-                        .isEqualTo(original.getFileHeader().getPageNumber()),
-                () -> assertThat(deserialized.getFileHeader().getPrevPageNumber())
-                        .isEqualTo(original.getFileHeader().getPrevPageNumber()),
-                () -> assertThat(deserialized.getFileHeader().getNextPageNumber())
-                        .isEqualTo(original.getFileHeader().getNextPageNumber()),
-
-                () -> assertThat(deserialized.getSpaceId()).isEqualTo(original.getSpaceId()),
-                () -> assertThat(deserialized.getSize()).isEqualTo(original.getSize()),
-
-                () -> assertThat(deserialized.getFreeFrag().getFirst().getOffset())
-                        .isEqualTo(original.getFreeFrag().getFirst().getOffset()),
-                () -> assertThat(deserialized.getFreeFrag().getFirst().getPageNumber())
-                        .isEqualTo(original.getFreeFrag().getFirst().getPageNumber()),
-
-                () -> assertThat(deserialized.getFullFrag().getFirst().getOffset())
-                        .isEqualTo(original.getFullFrag().getFirst().getOffset()),
-                () -> assertThat(deserialized.getFullFrag().getFirst().getPageNumber())
-                        .isEqualTo(original.getFullFrag().getFirst().getPageNumber()),
-
-                () -> assertThat(deserialized.getFree().getFirst().getOffset())
-                        .isEqualTo(original.getFree().getFirst().getOffset()),
-                () -> assertThat(deserialized.getFree().getFirst().getPageNumber())
-                        .isEqualTo(original.getFree().getFirst().getPageNumber()),
-
+                () -> assertFileHeaderEquals(fileHeader, deserialized.getFileHeader()),
+                () -> assertThat(deserialized.getSpaceId()).as("spaceId").isEqualTo(1),
+                () -> assertThat(deserialized.getSize()).as("size").isEqualTo(0),
+                () -> assertBaseNodeEquals("FreeFrag", freeFrag, deserialized.getFreeFrag()),
+                () -> assertBaseNodeEquals("FullFrag", fullFrag, deserialized.getFullFrag()),
+                () -> assertBaseNodeEquals("Free", free, deserialized.getFree()),
                 () -> assertThat(deserialized.getEntries()[0]).isEqualTo((byte) 5),
                 () -> assertThat(deserialized.getEntries()[1]).isEqualTo((byte) 3)
         );
@@ -330,6 +307,36 @@ class FspHeaderTest {
                 () -> assertThat(freeFrag.getFirst().getOffset()).isEqualTo(0),
                 () -> assertThat(freeFrag.getLast().getOffset()).isEqualTo(0),
                 () -> assertThat(free.getLast().getOffset()).isEqualTo(ExtentDescriptor.SIZE)
+        );
+    }
+
+    private void assertFileHeaderEquals(FileHeader expected, FileHeader actual) {
+        assertAll(
+                () -> assertThat(actual.getPageType()).as("PageType").isEqualTo(expected.getPageType()),
+                () -> assertThat(actual.getPageNumber()).as("PageNumber").isEqualTo(expected.getPageNumber()),
+                () -> assertThat(actual.getPrevPageNumber())
+                        .as("PrevPageNumber")
+                        .isEqualTo(expected.getPrevPageNumber()),
+                () -> assertThat(actual.getNextPageNumber())
+                        .as("NextPageNumber")
+                        .isEqualTo(expected.getNextPageNumber())
+        );
+    }
+
+    private void assertBaseNodeEquals(String nodeName, BaseNode expected, BaseNode actual) {
+        assertAll(
+                () -> assertThat(actual.getFirst().getPageNumber())
+                        .as(nodeName + " FirstPointer pageNumber")
+                        .isEqualTo(expected.getFirst().getPageNumber()),
+                () -> assertThat(actual.getFirst().getOffset())
+                        .as(nodeName + " FirstPointer offset")
+                        .isEqualTo(expected.getFirst().getOffset()),
+                () -> assertThat(actual.getLast().getPageNumber())
+                        .as(nodeName + " LastPointer pageNumber")
+                        .isEqualTo(expected.getLast().getPageNumber()),
+                () -> assertThat(actual.getLast().getOffset())
+                        .as(nodeName + " LastPointer offset")
+                        .isEqualTo(expected.getLast().getOffset())
         );
     }
 

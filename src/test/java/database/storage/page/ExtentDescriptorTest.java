@@ -24,8 +24,7 @@ class ExtentDescriptorTest {
         pageState.set(0);
         ExtentDescriptor descriptor = new ExtentDescriptor((short) 1, prev, next, state, pageState);
 
-        int capacity = ExtentDescriptor.SIZE;
-        ByteBuffer buffer = ByteBuffer.allocate(capacity);
+        ByteBuffer buffer = ByteBuffer.allocate(ExtentDescriptor.SIZE);
 
         // when
         descriptor.serialize(buffer);
@@ -33,18 +32,14 @@ class ExtentDescriptorTest {
 
         // then
         assertAll(
-                () -> assertThat(buffer.getShort()).isEqualTo((short) 1),
-                () -> assertThat(buffer.getInt()).isEqualTo(0),
-                () -> assertThat(buffer.getInt()).isEqualTo(150),
-                () -> assertThat(buffer.getInt()).isEqualTo(0),
-                () -> assertThat(buffer.getInt()).isEqualTo(250),
-                () -> assertThat(buffer.get()).isEqualTo((byte) 2)
+                () -> assertThat(buffer.getShort()).as("ExtentNumber").isEqualTo((short) 1),
+                () -> assertThat(buffer.getInt()).as("PrevPointer pageNumber").isEqualTo(0),
+                () -> assertThat(buffer.getInt()).as("PrevPointer offset").isEqualTo(150),
+                () -> assertThat(buffer.getInt()).as("NextPointer pageNumber").isEqualTo(0),
+                () -> assertThat(buffer.getInt()).as("NextPointer offset").isEqualTo(250),
+                () -> assertThat(buffer.get()).as("ExtentState code").isEqualTo((byte) 2),
+                () -> assertThat(getBitSet(buffer).get(0)).as("Page0 state").isTrue()
         );
-
-        byte[] bitmap = new byte[ExtentDescriptor.BITMAP_BYTE_SIZE];
-        buffer.get(bitmap);
-        BitSet resultPageState = BitSet.valueOf(bitmap);
-        assertThat(resultPageState.get(0)).isTrue();
     }
 
     @DisplayName("ExtentDescriptor 역직렬화 테스트")
@@ -58,8 +53,7 @@ class ExtentDescriptorTest {
         pageState.set(0);
         ExtentDescriptor original = new ExtentDescriptor((short) 1, prev, next, state, pageState);
 
-        int capacity = ExtentDescriptor.SIZE;
-        ByteBuffer buffer = ByteBuffer.allocate(capacity);
+        ByteBuffer buffer = ByteBuffer.allocate(ExtentDescriptor.SIZE);
         original.serialize(buffer);
         buffer.flip();
 
@@ -68,14 +62,13 @@ class ExtentDescriptorTest {
 
         // then
         assertAll(
-                () -> assertThat(deserialized.getExtentNumber()).isEqualTo(original.getExtentNumber()),
-                () -> assertThat(deserialized.getNext().getPageNumber()).isEqualTo(original.getNext().getPageNumber()),
-                () -> assertThat(deserialized.getNext().getOffset()).isEqualTo(original.getNext().getOffset()),
-                () -> assertThat(deserialized.getPrev().getPageNumber()).isEqualTo(original.getPrev().getPageNumber()),
-                () -> assertThat(deserialized.getPrev().getOffset()).isEqualTo(original.getPrev().getOffset()),
-                () -> assertThat(deserialized.getState().getCode()).isEqualTo(original.getState().getCode()),
-                () -> assertThat(deserialized.getPageState().get(0)).isTrue(),
-                () -> assertThat(deserialized.getPageState().get(1)).isFalse()
+                () -> assertThat(deserialized.getExtentNumber())
+                        .as("ExtentNumber").isEqualTo(original.getExtentNumber()),
+                () -> assertPointersEqual("PrevPointer", prev, deserialized.getPrev()),
+                () -> assertPointersEqual("NextPointer", next, deserialized.getNext()),
+                () -> assertThat(deserialized.getState()).as("ExtentState").isEqualTo(state),
+                () -> assertThat(deserialized.getPageState().get(0)).as("Page0 state").isTrue(),
+                () -> assertThat(deserialized.getPageState().get(1)).as("Page1 state").isFalse()
         );
     }
 
@@ -157,6 +150,20 @@ class ExtentDescriptorTest {
         // then
         assertAll(
                 () -> assertThat(descriptor.getState()).isEqualTo(ExtentState.FREE)
+        );
+    }
+
+    private BitSet getBitSet(ByteBuffer buffer) {
+        byte[] bitmap = new byte[ExtentDescriptor.BITMAP_BYTE_SIZE];
+        buffer.get(bitmap);
+        return BitSet.valueOf(bitmap);
+    }
+
+    private void assertPointersEqual(String pointerName, Pointer expected, Pointer actual) {
+        assertAll(
+                () -> assertThat(actual.getPageNumber()).as(pointerName + " pageNumber")
+                        .isEqualTo(expected.getPageNumber()),
+                () -> assertThat(actual.getOffset()).as(pointerName + " offset").isEqualTo(expected.getOffset())
         );
     }
 }

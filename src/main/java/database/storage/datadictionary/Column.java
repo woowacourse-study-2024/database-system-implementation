@@ -38,6 +38,10 @@ public class Column {
         buffer.putShort(length);
     }
 
+    public boolean hasName(String other) {
+        return name.equals(other);
+    }
+
     public int getByteSize() {
         return 1 + name.length() + 1 + 1 + 2;
     }

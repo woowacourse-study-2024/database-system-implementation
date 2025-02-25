@@ -25,8 +25,8 @@ class PointerTest {
 
         // then
         assertAll(
-                () -> assertThat(buffer.getInt()).isEqualTo(0),
-                () -> assertThat(buffer.getInt()).isEqualTo(150)
+                () -> assertThat(buffer.getInt()).as("pageNumber").isEqualTo(0),
+                () -> assertThat(buffer.getInt()).as("offset").isEqualTo(150)
         );
     }
 
