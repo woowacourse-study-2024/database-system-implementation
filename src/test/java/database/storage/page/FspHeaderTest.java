@@ -150,8 +150,8 @@ class FspHeaderTest {
                 () -> assertThat(first.getExtentNumber()).isEqualTo((short) 1),
                 () -> assertThat(first.getState()).isEqualTo(ExtentState.FREE_FRAG),
                 () -> assertThat(first.getPageState().cardinality()).isEqualTo(ExtentDescriptor.PAGES_PER_EXTENT - 1),
-                () -> assertThat(first.getPrev().isEmpty()).isTrue(),
-                () -> assertThat(first.getNext().isEmpty()).isTrue()
+                () -> assertThat(first.getPrev().isNull()).isTrue(),
+                () -> assertThat(first.getNext().isNull()).isTrue()
         );
 
         // freeFrag 리스트가 업데이트 되었는지 테스트
@@ -162,8 +162,8 @@ class FspHeaderTest {
                 () -> assertThat(freeFragFirst.getState()).isEqualTo(ExtentState.FREE_FRAG),
                 () -> assertThat(freeFragFirst.getPageState().cardinality())
                         .isEqualTo(ExtentDescriptor.PAGES_PER_EXTENT - 1),
-                () -> assertThat(freeFragFirst.getPrev().isEmpty()).isTrue(),
-                () -> assertThat(freeFragFirst.getNext().isEmpty()).isTrue()
+                () -> assertThat(freeFragFirst.getPrev().isNull()).isTrue(),
+                () -> assertThat(freeFragFirst.getNext().isNull()).isTrue()
         );
 
         // free 리스트가 업데이트 되었는지 테스트
@@ -172,8 +172,8 @@ class FspHeaderTest {
         assertAll(
                 () -> assertThat(second.getExtentNumber()).isEqualTo((short) 2),
                 () -> assertThat(second.getState()).isEqualTo(ExtentState.FREE),
-                () -> assertThat(second.getPrev().isEmpty()).isTrue(),
-                () -> assertThat(second.getNext().isEmpty()).isFalse()
+                () -> assertThat(second.getPrev().isNull()).isTrue(),
+                () -> assertThat(second.getNext().isNull()).isFalse()
         );
 
         // free 리스트의 마지막 Extent
@@ -183,8 +183,8 @@ class FspHeaderTest {
                 () -> assertThat(freeLast.getState()).isEqualTo(ExtentState.FREE),
                 () -> assertThat(freeLast.getPageState().cardinality())
                         .isEqualTo(ExtentDescriptor.PAGES_PER_EXTENT),
-                () -> assertThat(freeLast.getPrev().isEmpty()).isFalse(),
-                () -> assertThat(freeLast.getNext().isEmpty()).isTrue()
+                () -> assertThat(freeLast.getPrev().isNull()).isFalse(),
+                () -> assertThat(freeLast.getNext().isNull()).isTrue()
         );
 
         // FreeList의 중간 ExtentDescriptor
@@ -203,9 +203,9 @@ class FspHeaderTest {
             Pointer nextPrev = nextDescriptor.getPrev();
 
             assertAll(
-                    () -> assertThat(prevPointer.isEmpty()).isFalse(),
+                    () -> assertThat(prevPointer.isNull()).isFalse(),
                     () -> assertThat(prevNext.getOffset()).isEqualTo(currentOffset),
-                    () -> assertThat(nextPointer.isEmpty()).isFalse(),
+                    () -> assertThat(nextPointer.isNull()).isFalse(),
                     () -> assertThat(nextPrev.getOffset()).isEqualTo(currentOffset)
             );
         }
@@ -245,8 +245,8 @@ class FspHeaderTest {
                 () -> assertThat(fullFrag.getLength()).isEqualTo((short) 1),
                 () -> assertThat(freeFrag.getLength()).isEqualTo((short) 0),
                 () -> assertThat(free.getLength()).isEqualTo((short) 255),
-                () -> assertThat(freeFrag.getFirst().isEmpty()).isTrue(),
-                () -> assertThat(fullFrag.getFirst().isEmpty()).isFalse()
+                () -> assertThat(freeFrag.getFirst().isNull()).isTrue(),
+                () -> assertThat(fullFrag.getFirst().isNull()).isFalse()
         );
 
         // fullFrag 리스트의 Extent는 여유 페이지가 존재하지 않는다.

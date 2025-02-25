@@ -7,6 +7,9 @@ public class Pointer {
 
     public static final int SIZE = 4 + 4;
 
+    private static final int NO_PAGE_NUMBER = -1;
+    private static final int NO_OFFSET = -1;
+
     private final int pageNumber;
     private final int offset;
 
@@ -16,7 +19,7 @@ public class Pointer {
     }
 
     public static Pointer createNew() {
-        return new Pointer(-1, -1);
+        return new Pointer(NO_PAGE_NUMBER, NO_OFFSET);
     }
 
     public static Pointer deserialize(ByteBuffer buffer) {
@@ -30,8 +33,8 @@ public class Pointer {
         buffer.putInt(offset);
     }
 
-    public boolean isEmpty() {
-        return pageNumber == -1 && offset == -1;
+    public boolean isNull() {
+        return pageNumber == NO_PAGE_NUMBER && offset == NO_OFFSET;
     }
 
     public int getPageNumber() {

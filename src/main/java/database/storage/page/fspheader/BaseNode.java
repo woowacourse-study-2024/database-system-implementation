@@ -47,7 +47,7 @@ public class BaseNode {
     }
 
     public boolean isEmpty() {
-        return first.isEmpty() && last.isEmpty();
+        return first.isNull() && last.isNull();
     }
 
     public void increaseLength() {

@@ -218,7 +218,7 @@ public class FspHeader extends AbstractPage {
         Pointer nextPointer = currentDescriptor.getNext();
         list.changeFirst(nextPointer);
 
-        if (!nextPointer.isEmpty()) {
+        if (!nextPointer.isNull()) {
             ExtentDescriptor nextDescriptor = readDescriptor(currentDescriptor.getNext());
             nextDescriptor.changePrev(Pointer.createNew());
             writeDescriptor(nextDescriptor, nextPointer);
@@ -233,7 +233,7 @@ public class FspHeader extends AbstractPage {
     private void addLast(BaseNode list, ExtentDescriptor currentDescriptor, Pointer currentPointer) {
         Pointer lastPointer = list.getLast();
 
-        if (!lastPointer.isEmpty()) {
+        if (!lastPointer.isNull()) {
             ExtentDescriptor lastDescriptor = readDescriptor(lastPointer);
             lastDescriptor.changeNext(currentPointer);
             writeDescriptor(lastDescriptor, lastPointer);
