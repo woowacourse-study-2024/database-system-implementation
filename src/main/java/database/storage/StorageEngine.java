@@ -29,7 +29,7 @@ public class StorageEngine {
         return table.selectRecords(rootPageNumber, condition);
     }
 
-    // Undo Log 및 MVCC 미구현
+    // TODO: Undo Log 및 MVCC 미구현
     public void deleteRecords(String tableName, Condition condition) {
         Metadata metadata = dataDictionary.getMetadata(tableName);
         int rootPageNumber = metadata.getClusteredIndex().getRootPageNumber();
