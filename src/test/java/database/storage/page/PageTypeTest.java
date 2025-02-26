@@ -15,7 +15,7 @@ class PageTypeTest {
 
         PageType pageType = PageType.fromCode(pageTypeCode);
 
-        assertThat(pageType).isEqualTo(PageType.INDEX);
+        assertThat(pageType).isEqualTo(PageType.DATA);
     }
 
 
